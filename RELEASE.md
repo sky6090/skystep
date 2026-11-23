@@ -2,7 +2,7 @@
 
 SkyStep v1 发布前检查与 GitHub Pages 部署步骤。
 
-> 当前环境备注：本机没有 `git` / `gh`，`winget` 下载 Git 时 GitHub 连接超时。因此仓库尚未初始化、也未推送；代码和 `dist/` 构建产物已经就绪，部署需在能访问 GitHub 的环境执行下面的步骤。
+> 当前环境备注：系统 `git` / `gh` 未安装；已下载 portable MinGit 到 `.tools/git`，本地仓库已初始化并提交（`76991f9`）。但没有 remote 和 GitHub 授权，所以尚未推送；GitHub 网络现在可访问。
 
 ## 1. 发布前检查
 
