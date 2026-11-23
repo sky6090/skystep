@@ -1,0 +1,46 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { VitePWA } from 'vite-plugin-pwa'
+import { fileURLToPath, URL } from 'node:url'
+
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/skystep/' : '/',
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['icon.svg'],
+      manifest: {
+        name: 'SkyStep',
+        short_name: 'SkyStep',
+        description: 'A local-first CET-6 vocabulary and writing companion.',
+        lang: 'zh-CN',
+        theme_color: '#F6F4EF',
+        background_color: '#F6F4EF',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '.',
+        scope: '.',
+        icons: [
+          {
+            src: 'icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,json,woff2}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        navigateFallback: 'index.html',
+        cleanupOutdatedCaches: true,
+      },
+    }),
+  ],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+}))

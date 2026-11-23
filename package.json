@@ -1,0 +1,41 @@
+{
+  "name": "skystep",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SkyStep — a local-first CET-6 vocabulary and writing companion.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "postbuild": "node scripts/copy-404.mjs",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "cet6",
+    "vocabulary",
+    "fsrs",
+    "vue"
+  ],
+  "author": "sky",
+  "license": "MIT",
+  "packageManager": "pnpm@12.23.0",
+  "dependencies": {
+    "dexie": "^4.4.7",
+    "echarts": "^6.1.0",
+    "pinia": "^4.1.0",
+    "ts-fsrs": "^6.0.1",
+    "vue": "^3.5.46",
+    "vue-router": "^5.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "typescript": "5.9.3",
+    "vite": "^8.3.8",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.1.1",
+    "vue-tsc": "^3.3.14"
+  }
+}
