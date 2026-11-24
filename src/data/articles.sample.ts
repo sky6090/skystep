@@ -12,6 +12,7 @@ export interface WritingArticle {
   sentences: ArticleSentence[]
   targetMeanings?: Record<string, string>
   generated?: boolean
+  supplementedWords?: string[]
 }
 
 export const sampleArticles: WritingArticle[] = [
@@ -1992,6 +1993,831 @@ export const sampleArticles: WritingArticle[] = [
         en: 'A profound change is usually a quiet one.',
         zh: '深刻的改变通常是安静的。',
         targets: ['profound'],
+      },
+    ],
+  },
+  {
+    id: 'a71',
+    title: 'The Cost of a Bad First Draft',
+    theme: '写作',
+    targetWords: ['coherent', 'elaborate', 'substantial', 'legitimate'],
+    sentences: [
+      {
+        en: 'A coherent draft begins with one clear claim.',
+        zh: '一个连贯的草稿始于一个清晰的主张。',
+        targets: ['coherent'],
+      },
+      {
+        en: 'Do not make the outline too elaborate before you know what you think.',
+        zh: '在知道自己想什么之前，不要把提纲弄得太详尽。',
+        targets: ['elaborate'],
+      },
+      {
+        en: 'Substantial revision means cutting whole paragraphs, not just words.',
+        zh: '实质性修改意味着删掉整段，而不只是词。',
+        targets: ['substantial'],
+      },
+      {
+        en: 'It is legitimate to start over when the foundation is wrong.',
+        zh: '当地基错了，重新开始是合理的。',
+        targets: ['legitimate'],
+      },
+    ],
+  },
+  {
+    id: 'a72',
+    title: 'A Quiet Place to Think',
+    theme: '专注',
+    targetWords: ['profound', 'vulnerable', 'inevitable', 'diminish'],
+    sentences: [
+      {
+        en: 'A profound idea needs a quiet place to land.',
+        zh: '一个深刻的想法需要一个安静的地方落地。',
+        targets: ['profound'],
+      },
+      {
+        en: 'You are vulnerable to noise when you are already tired.',
+        zh: '你已经疲惫时，面对噪音是脆弱的。',
+        targets: ['vulnerable'],
+      },
+      {
+        en: 'Some distraction is inevitable; the goal is to return faster.',
+        zh: '有些分心是不可避免的；目标是更快回来。',
+        targets: ['inevitable'],
+      },
+      {
+        en: 'If you chase every notification, your focus will diminish.',
+        zh: '如果你追每条通知，专注会减少。',
+        targets: ['diminish'],
+      },
+    ],
+  },
+  {
+    id: 'a73',
+    title: 'The Feedback Loop',
+    theme: '反馈',
+    targetWords: ['compelling', 'empirical', 'undermine', 'coherent'],
+    sentences: [
+      {
+        en: 'A compelling feedback loop starts with a specific observation.',
+        zh: '一个令人信服的反馈循环始于具体的观察。',
+        targets: ['compelling'],
+      },
+      {
+        en: 'Empirical evidence should come before a strong opinion.',
+        zh: '实证证据应该在强烈观点之前。',
+        targets: ['empirical'],
+      },
+      {
+        en: 'Harsh wording can undermine the advice you are trying to give.',
+        zh: '严厉的措辞会削弱你想给出的建议。',
+        targets: ['undermine'],
+      },
+      {
+        en: 'A coherent next step is better than five vague suggestions.',
+        zh: '一个连贯的下一步胜过五个模糊建议。',
+        targets: ['coherent'],
+      },
+    ],
+  },
+  {
+    id: 'a74',
+    title: 'When Motivation Goes',
+    theme: '坚持',
+    targetWords: ['persistent', 'fluctuate', 'feasible', 'viable'],
+    sentences: [
+      {
+        en: 'Persistent effort is easier when the first step is small.',
+        zh: '第一步很小时，坚持不懈的努力更容易。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'Motivation will fluctuate, so do not build your plan around it.',
+        zh: '动机会波动，所以不要围绕它制定计划。',
+        targets: ['fluctuate'],
+      },
+      {
+        en: 'A feasible plan can survive a low-energy day.',
+        zh: '一个可行的计划能熬过低精力的一天。',
+        targets: ['feasible'],
+      },
+      {
+        en: 'A viable routine is one you can return to after a break.',
+        zh: '一个可行的日常是你休息后能回来的那个。',
+        targets: ['viable'],
+      },
+    ],
+  },
+  {
+    id: 'a75',
+    title: 'Reading for Structure',
+    theme: '阅读',
+    targetWords: ['coherent', 'intricate', 'profound', 'legitimate'],
+    sentences: [
+      {
+        en: 'A coherent article gives every paragraph a job.',
+        zh: '一篇连贯的文章让每一段都有作用。',
+        targets: ['coherent'],
+      },
+      {
+        en: 'An intricate argument needs signposts, not more decoration.',
+        zh: '一个错综复杂的论证需要路标，而不是更多装饰。',
+        targets: ['intricate'],
+      },
+      {
+        en: 'A profound point is often hidden in a simple example.',
+        zh: '一个深刻的观点常藏在简单例子中。',
+        targets: ['profound'],
+      },
+      {
+        en: 'It is legitimate to skip a detail that does not serve the whole.',
+        zh: '跳过对整体无用的细节是合理的。',
+        targets: ['legitimate'],
+      },
+    ],
+  },
+  {
+    id: 'a76',
+    title: 'The Value of a Checklist',
+    theme: '方法',
+    targetWords: ['feasible', 'elaborate', 'diminish', 'substantial'],
+    sentences: [
+      {
+        en: 'A feasible checklist has fewer than seven items.',
+        zh: '一个可行的清单少于七项。',
+        targets: ['feasible'],
+      },
+      {
+        en: 'An elaborate checklist can become a way to avoid work.',
+        zh: '一个详尽的清单可能变成逃避工作的方式。',
+        targets: ['elaborate'],
+      },
+      {
+        en: 'If the list keeps growing, its value will diminish.',
+        zh: '如果清单不断增长，价值会减少。',
+        targets: ['diminish'],
+      },
+      {
+        en: 'Substantial progress often comes from one item done well.',
+        zh: '实质性进步常来自把一项做好。',
+        targets: ['substantial'],
+      },
+    ],
+  },
+  {
+    id: 'a77',
+    title: 'Learning From a Silent Room',
+    theme: '专注',
+    targetWords: ['inhibit', 'vulnerable', 'manipulate', 'persistent'],
+    sentences: [
+      {
+        en: 'A silent room can inhibit the urge to perform.',
+        zh: '安静的房间会抑制表演的冲动。',
+        targets: ['inhibit'],
+      },
+      {
+        en: 'You are vulnerable when you need an audience to think.',
+        zh: '当你需要观众才能思考时，你是脆弱的。',
+        targets: ['vulnerable'],
+      },
+      {
+        en: 'Some apps manipulate silence into another notification.',
+        zh: '有些应用把安静操纵成另一条通知。',
+        targets: ['manipulate'],
+      },
+      {
+        en: 'Persistent thinking needs a little empty space.',
+        zh: '坚持不懈的思考需要一点空白。',
+        targets: ['persistent'],
+      },
+    ],
+  },
+  {
+    id: 'a78',
+    title: 'The Shape of a Good Day',
+    theme: '节奏',
+    targetWords: ['substantial', 'inevitable', 'profound', 'diminish'],
+    sentences: [
+      {
+        en: 'A good day is made of substantial small blocks.',
+        zh: '一个好日子由实质性小块组成。',
+        targets: ['substantial'],
+      },
+      {
+        en: 'Some interruption is inevitable, so leave a buffer.',
+        zh: '有些打断是不可避免的，所以留出缓冲。',
+        targets: ['inevitable'],
+      },
+      {
+        en: 'A profound change may look like a boring routine.',
+        zh: '深刻的改变可能看起来像无聊的日常。',
+        targets: ['profound'],
+      },
+      {
+        en: 'If you expect a perfect day, your satisfaction will diminish.',
+        zh: '如果你期待完美的一天，满足感会减少。',
+        targets: ['diminish'],
+      },
+    ],
+  },
+  {
+    id: 'a79',
+    title: 'A Question of Evidence',
+    theme: '证据',
+    targetWords: ['empirical', 'plausible', 'ambiguous', 'compelling'],
+    sentences: [
+      {
+        en: 'Empirical evidence is not the same as a vivid story.',
+        zh: '实证证据不等于生动的故事。',
+        targets: ['empirical'],
+      },
+      {
+        en: 'A plausible explanation still needs a test.',
+        zh: '一个看似合理的解释仍然需要检验。',
+        targets: ['plausible'],
+      },
+      {
+        en: 'An ambiguous result should be reported as ambiguous.',
+        zh: '一个模棱两可的结果应如实报告为模棱两可。',
+        targets: ['ambiguous'],
+      },
+      {
+        en: 'A compelling conclusion admits what it does not know.',
+        zh: '一个令人信服的结论会承认它不知道什么。',
+        targets: ['compelling'],
+      },
+    ],
+  },
+  {
+    id: 'a80',
+    title: 'The Practice of Returning',
+    theme: '坚持',
+    targetWords: ['persistent', 'tentative', 'viable', 'feasible'],
+    sentences: [
+      {
+        en: 'Persistent return is the core of any practice.',
+        zh: '坚持不懈地回来是任何练习的核心。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'Start with a tentative schedule, then adjust it.',
+        zh: '先从一个试探性的日程开始，再调整。',
+        targets: ['tentative'],
+      },
+      {
+        en: 'A viable plan can survive a missed week.',
+        zh: '一个可行的计划能熬过错过的一周。',
+        targets: ['viable'],
+      },
+      {
+        en: 'A feasible routine fits the life you actually have.',
+        zh: '一个可行的日常适配你真正拥有的生活。',
+        targets: ['feasible'],
+      },
+    ],
+  },
+  {
+    id: 'a81',
+    title: 'The Cost of a Shortcut',
+    theme: '方法',
+    targetWords: ['plausible', 'undermine', 'feasible', 'substantial'],
+    sentences: [
+      {
+        en: 'A plausible shortcut can save time, but it can also undermine the skill you need.',
+        zh: '一个看似合理的捷径能省时间，但也可能削弱你需要的技能。',
+        targets: ['plausible', 'undermine'],
+      },
+      {
+        en: 'A feasible method is not always a shallow one.',
+        zh: '一个可行的方法不一定是浅薄的方法。',
+        targets: ['feasible'],
+      },
+      {
+        en: 'Substantial learning needs at least one hard step.',
+        zh: '实质性学习需要至少一个困难步骤。',
+        targets: ['substantial'],
+      },
+    ],
+  },
+  {
+    id: 'a82',
+    title: 'A Better Question',
+    theme: '提问',
+    targetWords: ['ambiguous', 'compelling', 'tentative', 'coherent'],
+    sentences: [
+      {
+        en: 'An ambiguous question is often the most honest one.',
+        zh: '一个模棱两可的问题往往是最诚实的问题。',
+        targets: ['ambiguous'],
+      },
+      {
+        en: 'A compelling answer begins with a tentative guess.',
+        zh: '一个令人信服的答案始于试探性的猜测。',
+        targets: ['compelling', 'tentative'],
+      },
+      {
+        en: 'A coherent line of inquiry is better than a clever detour.',
+        zh: '一条连贯的探究路线胜过聪明的绕路。',
+        targets: ['coherent'],
+      },
+    ],
+  },
+  {
+    id: 'a83',
+    title: 'The Room You Study In',
+    theme: '环境',
+    targetWords: ['inhibit', 'vulnerable', 'manipulate', 'profound'],
+    sentences: [
+      {
+        en: 'The room you study in can inhibit your attention.',
+        zh: '你学习的房间会抑制注意力。',
+        targets: ['inhibit'],
+      },
+      {
+        en: 'You are vulnerable to a screen that is always one tap away.',
+        zh: '面对只差一次点击的屏幕，你是脆弱的。',
+        targets: ['vulnerable'],
+      },
+      {
+        en: 'Some apps manipulate the room itself with sound and light.',
+        zh: '有些应用用声音和光操纵房间本身。',
+        targets: ['manipulate'],
+      },
+      {
+        en: 'A profound change can start with one clean desk.',
+        zh: '深刻的改变可以始于一张干净的桌子。',
+        targets: ['profound'],
+      },
+    ],
+  },
+  {
+    id: 'a84',
+    title: 'Learning to Wait',
+    theme: '耐心',
+    targetWords: ['tentative', 'inevitable', 'persistent', 'diminish'],
+    sentences: [
+      {
+        en: 'A tentative plan is easier to wait for than a final one.',
+        zh: '一个试探性的计划比最终计划更容易等待。',
+        targets: ['tentative'],
+      },
+      {
+        en: 'Some delay is inevitable when you are learning.',
+        zh: '学习时有些延迟是不可避免的。',
+        targets: ['inevitable'],
+      },
+      {
+        en: 'Persistent patience is different from passive waiting.',
+        zh: '坚持不懈的耐心不同于被动等待。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'If you check constantly, your patience will diminish.',
+        zh: '如果你不断检查，耐心会减少。',
+        targets: ['diminish'],
+      },
+    ],
+  },
+  {
+    id: 'a85',
+    title: 'The Value of a Reread',
+    theme: '阅读',
+    targetWords: ['coherent', 'intricate', 'substantial', 'legitimate'],
+    sentences: [
+      {
+        en: 'A coherent reread is not the same as reading again passively.',
+        zh: '一个连贯的重读不等于被动再读一遍。',
+        targets: ['coherent'],
+      },
+      {
+        en: 'An intricate passage may need three visits before it opens.',
+        zh: '一个错综复杂的段落可能需要三次阅读才打开。',
+        targets: ['intricate'],
+      },
+      {
+        en: 'Substantial notes come from rereading with a question.',
+        zh: '实质性笔记来自带着问题重读。',
+        targets: ['substantial'],
+      },
+      {
+        en: 'It is legitimate to reread for pleasure, not only for exams.',
+        zh: '为了乐趣重读是合理的，不只是为了考试。',
+        targets: ['legitimate'],
+      },
+    ],
+  },
+  {
+    id: 'a86',
+    title: 'When the Plan Fails',
+    theme: '计划',
+    targetWords: ['viable', 'reluctant', 'feasible', 'persistent'],
+    sentences: [
+      {
+        en: 'A viable plan is one that can fail without collapsing.',
+        zh: '一个可行的计划是失败也不会崩溃的计划。',
+        targets: ['viable'],
+      },
+      {
+        en: 'You may be reluctant to admit that the first plan was wrong.',
+        zh: '你可能不情愿承认第一个计划错了。',
+        targets: ['reluctant'],
+      },
+      {
+        en: 'A feasible fallback is part of the plan, not a sign of weakness.',
+        zh: '一个可行的备用方案是计划的一部分，不是软弱。',
+        targets: ['feasible'],
+      },
+      {
+        en: 'Persistent adjustment is what keeps a plan alive.',
+        zh: '坚持不懈的调整让计划保持活力。',
+        targets: ['persistent'],
+      },
+    ],
+  },
+  {
+    id: 'a87',
+    title: 'The Habit of Noticing',
+    theme: '观察',
+    targetWords: ['empirical', 'profound', 'vulnerable', 'inevitable'],
+    sentences: [
+      {
+        en: 'Empirical noticing means writing down what actually happened.',
+        zh: '实证观察意味着写下实际发生的事。',
+        targets: ['empirical'],
+      },
+      {
+        en: 'A profound insight often comes from a small detail you ignored.',
+        zh: '一个深刻的洞见常来自你忽略的小细节。',
+        targets: ['profound'],
+      },
+      {
+        en: 'You are vulnerable when you only notice what confirms your view.',
+        zh: '当你只注意印证自己观点的事时，你是脆弱的。',
+        targets: ['vulnerable'],
+      },
+      {
+        en: 'Some bias is inevitable; a record helps you see it.',
+        zh: '有些偏见是不可避免的；记录帮你看见它。',
+        targets: ['inevitable'],
+      },
+    ],
+  },
+  {
+    id: 'a88',
+    title: 'A Smaller Screen',
+    theme: '阅读',
+    targetWords: ['manipulate', 'fluctuate', 'diminish', 'inhibit'],
+    sentences: [
+      {
+        en: 'A smaller screen can manipulate the way you read.',
+        zh: '更小的屏幕会操纵你的阅读方式。',
+        targets: ['manipulate'],
+      },
+      {
+        en: 'Your attention will fluctuate as you scroll.',
+        zh: '滑动时你的注意力会波动。',
+        targets: ['fluctuate'],
+      },
+      {
+        en: 'If you skim everything, your patience will diminish.',
+        zh: '如果你什么都略读，耐心会减少。',
+        targets: ['diminish'],
+      },
+      {
+        en: 'A quiet reading app can inhibit the urge to switch.',
+        zh: '一个安静的阅读应用会抑制切换的冲动。',
+        targets: ['inhibit'],
+      },
+    ],
+  },
+  {
+    id: 'a89',
+    title: 'What Makes a Good Summary',
+    theme: '写作',
+    targetWords: ['coherent', 'substantial', 'compelling', 'legitimate'],
+    sentences: [
+      {
+        en: 'A coherent summary keeps the main claim and drops the decoration.',
+        zh: '一个连贯的摘要保留主要主张，删掉装饰。',
+        targets: ['coherent'],
+      },
+      {
+        en: 'A substantial summary is short but preserves the evidence.',
+        zh: '一个实质性摘要很短，但保留证据。',
+        targets: ['substantial'],
+      },
+      {
+        en: 'A compelling summary makes the reader want the original.',
+        zh: '一个令人信服的摘要让读者想要原文。',
+        targets: ['compelling'],
+      },
+      {
+        en: 'It is legitimate to leave out an example that does not change the point.',
+        zh: '省略不改变观点的例子是合理的。',
+        targets: ['legitimate'],
+      },
+    ],
+  },
+  {
+    id: 'a90',
+    title: 'The Long Middle',
+    theme: '坚持',
+    targetWords: ['persistent', 'inevitable', 'profound', 'diminish'],
+    sentences: [
+      {
+        en: 'The long middle is where persistent work matters most.',
+        zh: '漫长的中段是坚持不懈的工作最重要的地方。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'Some plateaus are inevitable, even when the method is right.',
+        zh: '即使方法正确，有些平台期也是不可避免的。',
+        targets: ['inevitable'],
+      },
+      {
+        en: 'A profound change can look like no change for a month.',
+        zh: '深刻的改变可能一个月都像没变。',
+        targets: ['profound'],
+      },
+      {
+        en: 'If you quit at the plateau, your gains will diminish.',
+        zh: '如果你在平台期退出，收益会减少。',
+        targets: ['diminish'],
+      },
+    ],
+  },
+  {
+    id: 'a91',
+    title: 'The Cost of a Crowded Inbox',
+    theme: '注意力',
+    targetWords: ['manipulate', 'inhibit', 'diminish', 'vulnerable'],
+    sentences: [
+      {
+        en: 'A crowded inbox can manipulate what feels urgent.',
+        zh: '拥挤的收件箱会操纵什么感觉紧急。',
+        targets: ['manipulate'],
+      },
+      {
+        en: 'Constant alerts can inhibit the work that needs silence.',
+        zh: '不断提醒会抑制需要安静的工作。',
+        targets: ['inhibit'],
+      },
+      {
+        en: 'If you answer everything, your attention will diminish.',
+        zh: '如果你回复一切，注意力会减少。',
+        targets: ['diminish'],
+      },
+      {
+        en: 'You are vulnerable when every message can interrupt you.',
+        zh: '当每条消息都能打断你时，你是脆弱的。',
+        targets: ['vulnerable'],
+      },
+    ],
+  },
+  {
+    id: 'a92',
+    title: 'A Better Way to Begin',
+    theme: '开始',
+    targetWords: ['tentative', 'feasible', 'persistent', 'reluctant'],
+    sentences: [
+      {
+        en: 'A tentative beginning is better than a delayed perfect one.',
+        zh: '一个试探性的开始胜过一个拖延的完美开始。',
+        targets: ['tentative'],
+      },
+      {
+        en: 'A feasible first step fits into ten minutes.',
+        zh: '一个可行的第一步能放进十分钟。',
+        targets: ['feasible'],
+      },
+      {
+        en: 'Persistent starts matter more than dramatic ones.',
+        zh: '坚持不懈的开始比戏剧性的开始更重要。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'You may be reluctant to begin before you feel ready.',
+        zh: '你可能不情愿在准备好之前开始。',
+        targets: ['reluctant'],
+      },
+    ],
+  },
+  {
+    id: 'a93',
+    title: 'What We Learn From Revisions',
+    theme: '写作',
+    targetWords: ['substantial', 'coherent', 'profound', 'legitimate'],
+    sentences: [
+      {
+        en: 'Substantial revision changes the shape of an argument.',
+        zh: '实质性修改会改变论证的形状。',
+        targets: ['substantial'],
+      },
+      {
+        en: 'A coherent draft is easier to revise than a beautiful mess.',
+        zh: '一个连贯的草稿比漂亮的混乱更容易修改。',
+        targets: ['coherent'],
+      },
+      {
+        en: 'A profound insight often appears in the third draft.',
+        zh: '一个深刻的洞见常出现在第三稿。',
+        targets: ['profound'],
+      },
+      {
+        en: 'It is legitimate to cut a sentence you love.',
+        zh: '删掉你喜爱的一个句子是合理的。',
+        targets: ['legitimate'],
+      },
+    ],
+  },
+  {
+    id: 'a94',
+    title: 'The Quiet Power of a List',
+    theme: '方法',
+    targetWords: ['elaborate', 'feasible', 'diminish', 'substantial'],
+    sentences: [
+      {
+        en: 'An elaborate list can hide the one task that matters.',
+        zh: '一个详尽的清单可能掩盖真正重要的任务。',
+        targets: ['elaborate'],
+      },
+      {
+        en: 'A feasible list has one priority and two small tasks.',
+        zh: '一个可行的清单有一个优先项和两个小任务。',
+        targets: ['feasible'],
+      },
+      {
+        en: 'If the list is too long, your focus will diminish.',
+        zh: '如果清单太长，专注会减少。',
+        targets: ['diminish'],
+      },
+      {
+        en: 'Substantial progress comes from finishing the first item.',
+        zh: '实质性进步来自完成第一项。',
+        targets: ['substantial'],
+      },
+    ],
+  },
+  {
+    id: 'a95',
+    title: 'When the Answer Is Not Clear',
+    theme: '判断',
+    targetWords: ['ambiguous', 'plausible', 'empirical', 'inevitable'],
+    sentences: [
+      {
+        en: 'An ambiguous answer can be more honest than a false certainty.',
+        zh: '一个模棱两可的答案可能比虚假的确定更诚实。',
+        targets: ['ambiguous'],
+      },
+      {
+        en: 'A plausible theory still needs empirical support.',
+        zh: '一个看似合理的理论仍然需要实证支持。',
+        targets: ['plausible', 'empirical'],
+      },
+      {
+        en: 'Some uncertainty is inevitable in real research.',
+        zh: '真实研究中有些不确定性是不可避免的。',
+        targets: ['inevitable'],
+      },
+    ],
+  },
+  {
+    id: 'a96',
+    title: 'A Practice of One’s Own',
+    theme: '系统',
+    targetWords: ['persistent', 'viable', 'feasible', 'profound'],
+    sentences: [
+      {
+        en: 'Persistent practice needs a rhythm you can keep.',
+        zh: '坚持不懈的练习需要你能保持的节奏。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'A viable routine survives a busy week.',
+        zh: '一个可行的日常能熬过忙碌的一周。',
+        targets: ['viable'],
+      },
+      {
+        en: 'A feasible minimum is better than an ambitious zero.',
+        zh: '一个可行的最低量胜过雄心勃勃的零。',
+        targets: ['feasible'],
+      },
+      {
+        en: 'A profound change often looks ordinary from outside.',
+        zh: '深刻的改变从外面看往往很普通。',
+        targets: ['profound'],
+      },
+    ],
+  },
+  {
+    id: 'a97',
+    title: 'The Distance Between Drafts',
+    theme: '写作',
+    targetWords: ['elaborate', 'coherent', 'substantial', 'reluctant'],
+    sentences: [
+      {
+        en: 'An elaborate first draft can hide a simple idea.',
+        zh: '一个详尽的初稿可能掩盖一个简单想法。',
+        targets: ['elaborate'],
+      },
+      {
+        en: 'A coherent second draft makes the idea visible.',
+        zh: '一个连贯的第二稿让想法可见。',
+        targets: ['coherent'],
+      },
+      {
+        en: 'Substantial improvement often comes from subtraction.',
+        zh: '实质性提升常来自删减。',
+        targets: ['substantial'],
+      },
+      {
+        en: 'You may be reluctant to delete your favorite paragraph.',
+        zh: '你可能不情愿删掉最喜欢的段落。',
+        targets: ['reluctant'],
+      },
+    ],
+  },
+  {
+    id: 'a98',
+    title: 'Reading the Room',
+    theme: '观察',
+    targetWords: ['vulnerable', 'manipulate', 'inhibit', 'empirical'],
+    sentences: [
+      {
+        en: 'You are vulnerable to a room that rewards performance.',
+        zh: '面对奖励表演的房间，你是脆弱的。',
+        targets: ['vulnerable'],
+      },
+      {
+        en: 'Some people manipulate a group by controlling the agenda.',
+        zh: '有些人通过控制议程操纵群体。',
+        targets: ['manipulate'],
+      },
+      {
+        en: 'A rushed meeting can inhibit the quietest idea.',
+        zh: '仓促的会议会抑制最安静的想法。',
+        targets: ['inhibit'],
+      },
+      {
+        en: 'Empirical observation means noticing who never speaks.',
+        zh: '实证观察意味着注意谁从不发言。',
+        targets: ['empirical'],
+      },
+    ],
+  },
+  {
+    id: 'a99',
+    title: 'The Work of Returning',
+    theme: '坚持',
+    targetWords: ['persistent', 'diminish', 'inevitable', 'viable'],
+    sentences: [
+      {
+        en: 'Persistent return is more important than a perfect record.',
+        zh: '坚持不懈地回来比完美记录更重要。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'If you stop noticing small gains, motivation will diminish.',
+        zh: '如果你不再注意小进步，动机会减少。',
+        targets: ['diminish'],
+      },
+      {
+        en: 'Some missed days are inevitable; the plan should expect them.',
+        zh: '有些错过的日子是不可避免的；计划应预料到。',
+        targets: ['inevitable'],
+      },
+      {
+        en: 'A viable plan is one you can resume without punishment.',
+        zh: '一个可行的计划是你能不带惩罚地重新开始的。',
+        targets: ['viable'],
+      },
+    ],
+  },
+  {
+    id: 'a100',
+    title: 'A Hundred Small Steps',
+    theme: '长期',
+    targetWords: ['persistent', 'substantial', 'profound', 'feasible'],
+    sentences: [
+      {
+        en: 'A hundred small steps are built from persistent returns.',
+        zh: '一百个小步由坚持不懈地回来构成。',
+        targets: ['persistent'],
+      },
+      {
+        en: 'Substantial change is usually a pile of ordinary days.',
+        zh: '实质性改变通常是一堆普通日子。',
+        targets: ['substantial'],
+      },
+      {
+        en: 'A profound lesson can be stated in one sentence.',
+        zh: '一个深刻的教训可以用一句话说出。',
+        targets: ['profound'],
+      },
+      {
+        en: 'A feasible practice is one you can do today.',
+        zh: '一个可行的练习是你今天能做的。',
+        targets: ['feasible'],
       },
     ],
   },

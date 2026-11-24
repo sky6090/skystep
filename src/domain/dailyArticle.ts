@@ -21,9 +21,16 @@ function pickSentence(word: WordEntry, offset: number) {
   if (candidates.length) {
     return candidates[offset % candidates.length]
   }
+  if (word.example) {
+    return {
+      en: word.example,
+      zh: word.exampleZh,
+      targets: [word.id],
+    }
+  }
   return {
-    en: word.example,
-    zh: word.exampleZh,
+    en: `The word ${word.word} means ${word.meaning}. I met it again today, and it made me pause.`,
+    zh: `“${word.word}”的意思是${word.meaning}。今天我又遇到了它，它让我停了一下。`,
     targets: [word.id],
   }
 }
@@ -34,7 +41,6 @@ export function buildDailyArticle(
 ): WritingArticle | null {
   const unique = words.filter(
     (word, index, all) =>
-      word.example &&
       all.findIndex((candidate) => candidate.id === word.id) === index,
   )
   if (unique.length < 1) return null

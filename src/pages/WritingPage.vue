@@ -60,6 +60,9 @@
 
         <p v-if="isDaily" class="daily-note">
           今日错词重组：用了 {{ article.targetWords.length }} 个目标词（错词 + 收藏 + 今日新词）。
+          <template v-if="article.supplementedWords?.length">
+            其中 {{ article.supplementedWords.length }} 个为素材补充词。
+          </template>
         </p>
 
         <p class="article-hint">
@@ -204,7 +207,12 @@ import { computed, onMounted, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import { db, type SubmissionRow } from '@/db/db'
 import { sampleArticles, type WritingArticle } from '@/data/articles.sample'
-import { wordById, type WordEntry } from '@/data/words.sample'
+import {
+  dictionaryMap,
+  entryToWord,
+  loadDictionary,
+} from '@/data/dictionary'
+import { sampleWords, wordById, type WordEntry } from '@/data/words.sample'
 import { buildDailyArticle } from '@/domain/dailyArticle'
 import { AIError, correctWithAI } from '@/domain/ai'
 import { startOfStudyDay, studyDayKey } from '@/domain/day'
@@ -253,16 +261,27 @@ onMounted(async () => {
     .filter((row) => row.favorite)
     .sort((a, b) => b.updatedAt - a.updatedAt)
 
+  const needsDictionary = rows.some((row) => !wordById.has(row.wordId))
+  const dictionary = needsDictionary
+    ? dictionaryMap(await loadDictionary())
+    : null
+  const resolveWord = (id: string): WordEntry | undefined => {
+    const sample = wordById.get(id)
+    if (sample) return sample
+    const entry = dictionary?.get(id)
+    return entry ? entryToWord(entry) : undefined
+  }
+
   const seen = new Set<string>()
   const cardsToday = await db.cards
     .where('createdAt')
     .aboveOrEqual(start)
     .toArray()
   const newWords = cardsToday
-    .map((row) => wordById.get(row.wordId))
+    .map((row) => resolveWord(row.wordId))
     .filter((word): word is WordEntry => Boolean(word))
   const base = [...wrong, ...favorites]
-    .map((row) => wordById.get(row.wordId))
+    .map((row) => resolveWord(row.wordId))
     .filter((word): word is WordEntry => Boolean(word))
     .concat(newWords)
     .filter((word) => {
@@ -271,7 +290,23 @@ onMounted(async () => {
       return true
     })
 
-  dailyArticle.value = base.length > 0 ? buildDailyArticle(base, studyDayKey()) : null
+  const supplemented: string[] = []
+  if (base.length > 0 && base.length < 5) {
+    for (const word of sampleWords) {
+      if (base.length >= 5) break
+      if (!seen.has(word.id)) {
+        seen.add(word.id)
+        base.push(word)
+        supplemented.push(word.id)
+      }
+    }
+  }
+
+  const daily = base.length > 0 ? buildDailyArticle(base, studyDayKey()) : null
+  if (daily && supplemented.length) {
+    daily.supplementedWords = supplemented
+  }
+  dailyArticle.value = daily
 
   const targets = new Set(rows.filter((row) => row.favorite || row.wrong).map((row) => row.wordId))
   let best = sampleArticles[0]

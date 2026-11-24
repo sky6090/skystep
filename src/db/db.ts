@@ -63,7 +63,7 @@ export interface SubmissionRow {
 export interface AttemptRow {
   id?: number
   createdAt: number
-  mode: 'practice' | 'exam'
+  mode: 'practice' | 'exam' | 'writing'
   title: string
   durationSec: number
   answers: Record<string, string>

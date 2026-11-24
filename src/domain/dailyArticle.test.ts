@@ -26,6 +26,32 @@ describe('daily wrong-word article', () => {
     expect(result.dimensions.target).toBe(40)
   })
 
+  it('supports a dictionary word without an example sentence', () => {
+    const article = buildDailyArticle(
+      [
+        {
+          id: 'abandon',
+          word: 'abandon',
+          phonetic: '/əˈbændən/',
+          pos: 'v.',
+          meaning: '放弃',
+          example: '',
+          exampleZh: '',
+          tags: ['CET-6'],
+        },
+      ],
+      '2026-11-24',
+    )
+    expect(article?.targetWords).toEqual(['abandon'])
+    if (!article) return
+    const result = evaluateWriting({
+      article,
+      mode: 'en-to-zh',
+      inputs: article.sentences.map((sentence) => sentence.zh),
+    })
+    expect(result.targetCoverage[0].used).toBe(true)
+  })
+
   it('returns null when there are no words', () => {
     expect(buildDailyArticle([], '2026-11-24')).toBeNull()
   })

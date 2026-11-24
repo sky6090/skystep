@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { db } from '@/db/db'
 import { shopById, shopItems, type ShopItem } from '@/data/shop'
-import { startOfStudyDay, studyDayKey } from '@/domain/day'
+import { startOfStudyDay, studyDayKey, studyWeekKey } from '@/domain/day'
 import {
   computeSettlement,
   stageForXp,
@@ -23,6 +23,8 @@ export interface PetState {
   lastSettledDay: string
   lastDecayDay: string
   lastInteractDay: string
+  claimedWeekly: string
+  claimedStage: boolean
 }
 
 const DEFAULT_PET: PetState = {
@@ -36,6 +38,8 @@ const DEFAULT_PET: PetState = {
   lastSettledDay: '',
   lastDecayDay: '',
   lastInteractDay: '',
+  claimedWeekly: '',
+  claimedStage: false,
 }
 
 function dayDistance(from: string, to: string) {
@@ -61,6 +65,10 @@ export const usePetStore = defineStore('pet', () => {
       .reduce((sum, item) => sum + (state.value.inventory[item.id] ?? 0), 0),
   )
   const renameCount = computed(() => state.value.inventory.rename ?? 0)
+  const weeklyClaimed = computed(
+    () => state.value.claimedWeekly === studyWeekKey(),
+  )
+  const stageClaimed = computed(() => state.value.claimedStage)
 
   async function load() {
     if (loaded.value) return
@@ -269,6 +277,26 @@ export const usePetStore = defineStore('pet', () => {
     return true
   }
 
+  async function claimWeekly(complete: boolean) {
+    if (!complete) return { ok: false, message: '本周目标还没完成。' }
+    if (weeklyClaimed.value) return { ok: false, message: '本周奖励已领取。' }
+    state.value.claimedWeekly = studyWeekKey()
+    state.value.coins += 120
+    state.value.inventory.food_basic = (state.value.inventory.food_basic ?? 0) + 1
+    await save()
+    return { ok: true, message: '周目标奖励：+120 金币，+1 基础粮。' }
+  }
+
+  async function claimStage(complete: boolean) {
+    if (!complete) return { ok: false, message: '阶段目标还没完成。' }
+    if (stageClaimed.value) return { ok: false, message: '阶段奖励已领取。' }
+    state.value.claimedStage = true
+    state.value.coins += 300
+    state.value.inventory.food_fish = (state.value.inventory.food_fish ?? 0) + 1
+    await save()
+    return { ok: true, message: '阶段奖励：+300 金币，+1 小鱼干。' }
+  }
+
   return {
     state,
     loaded,
@@ -277,6 +305,8 @@ export const usePetStore = defineStore('pet', () => {
     equippedSkinItem,
     foodCount,
     renameCount,
+    weeklyClaimed,
+    stageClaimed,
     load,
     save,
     settleToday,
@@ -285,5 +315,7 @@ export const usePetStore = defineStore('pet', () => {
     equipSkin,
     rename,
     interact,
+    claimWeekly,
+    claimStage,
   }
 })

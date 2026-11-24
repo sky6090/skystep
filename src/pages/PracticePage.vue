@@ -56,6 +56,15 @@
         </RouterLink>
       </section>
 
+      <section class="card main-card">
+        <div class="main-copy">
+          <p class="eyebrow">writing + translation</p>
+          <h2 class="h2">写作 + 翻译模考</h2>
+          <p class="muted small">60 分钟 · 写作 30 + 翻译 30 · 参考范文 / 译文 + 自评清单。</p>
+        </div>
+        <RouterLink to="/writing-exam" class="btn">开始</RouterLink>
+      </section>
+
       <section v-if="attempts.length" class="card history">
         <div class="spread">
           <h2 class="h3">最近练习</h2>

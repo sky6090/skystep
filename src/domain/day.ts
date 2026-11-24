@@ -20,6 +20,13 @@ export function startOfStudyDay(date = new Date()): Date {
   return d
 }
 
+export function studyWeekKey(date = new Date()): string {
+  const d = startOfStudyDay(date)
+  const mondayOffset = (d.getDay() + 6) % 7
+  d.setDate(d.getDate() - mondayOffset)
+  return studyDayKey(d)
+}
+
 export function formatDuration(ms: number): string {
   const minutes = Math.max(0, Math.round(ms / 60_000))
   if (minutes < 60) return `${minutes} 分钟`

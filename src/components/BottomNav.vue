@@ -43,7 +43,12 @@ const items = [
 function isActive(to: string) {
   if (to === '/pet') return route.path === '/pet' || route.path === '/shop'
   if (to === '/') {
-    return route.path === '/' || route.path === '/practice' || route.path === '/exam'
+    return (
+      route.path === '/' ||
+      route.path === '/practice' ||
+      route.path === '/exam' ||
+      route.path === '/writing-exam'
+    )
   }
   return route.path.startsWith(to)
 }

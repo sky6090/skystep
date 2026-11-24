@@ -5,8 +5,8 @@ import { evaluateWriting } from './writing'
 const article = sampleArticles[0]
 
 describe('rule-based writing evaluation', () => {
-  it('ships seventy bilingual articles', () => {
-    expect(sampleArticles).toHaveLength(70)
+  it('ships one hundred bilingual articles', () => {
+    expect(sampleArticles).toHaveLength(100)
   })
 
   it('keeps every sample article usable in both directions', () => {

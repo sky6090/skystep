@@ -106,6 +106,14 @@
             <span class="goal-chip" :class="{ done: weeklyWritings >= 3 }">
               写作 {{ Math.min(weeklyWritings, 3) }}/3 篇
             </span>
+            <button
+              class="btn btn-sm"
+              type="button"
+              :disabled="!weeklyComplete || pet.weeklyClaimed"
+              @click="claimWeekly"
+            >
+              {{ pet.weeklyClaimed ? '本周已领' : '领周奖励' }}
+            </button>
           </div>
         </div>
 
@@ -125,6 +133,14 @@
             </div>
             <span class="goal-value">{{ writingDays }}/30</span>
           </div>
+          <button
+            class="btn btn-sm"
+            type="button"
+            :disabled="!stageComplete || pet.stageClaimed"
+            @click="claimStage"
+          >
+            {{ pet.stageClaimed ? '阶段奖励已领' : '领阶段奖励' }}
+          </button>
         </div>
 
         <p class="caption">
@@ -190,6 +206,8 @@ const writingDays = ref(0)
 const stage = computed(() => pet.stageInfo)
 const skinColor = computed(() => pet.equippedSkinItem?.color ?? '')
 const settledToday = computed(() => pet.state.lastSettledDay === studyDayKey())
+const weeklyComplete = computed(() => weeklyDays.value >= 5 && weeklyWritings.value >= 3)
+const stageComplete = computed(() => learnedCount.value >= 1000 && writingDays.value >= 30)
 const hasActivity = computed(
   () => session.reviewedToday > 0 || session.learnedToday > 0 || session.wroteToday > 0,
 )
@@ -261,6 +279,16 @@ async function feed() {
 async function interact() {
   const ok = await pet.interact()
   message.value = ok ? '它眯了一下眼睛。' : '今天已经摸过了。'
+}
+
+async function claimWeekly() {
+  const result = await pet.claimWeekly(weeklyComplete.value)
+  message.value = result.message
+}
+
+async function claimStage() {
+  const result = await pet.claimStage(stageComplete.value)
+  message.value = result.message
 }
 
 function startRename() {

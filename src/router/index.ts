@@ -17,6 +17,11 @@ const router = createRouter({
       component: () => import('@/pages/PracticePage.vue'),
     },
     { path: '/exam', name: 'exam', component: () => import('@/pages/ExamPage.vue') },
+    {
+      path: '/writing-exam',
+      name: 'writing-exam',
+      component: () => import('@/pages/WritingExamPage.vue'),
+    },
     { path: '/writing', name: 'writing', component: () => import('@/pages/WritingPage.vue') },
     {
       path: '/wordbook',
