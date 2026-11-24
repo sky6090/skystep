@@ -37,8 +37,9 @@ export interface WritingInput {
   inputs: string[]
 }
 
-function targetMeaning(word: string): string[] {
-  const entry = wordById.get(word)
+function targetMeaning(word: string, article?: WritingArticle): string[] {
+  const explicit = article?.targetMeanings?.[word]
+  const entry = explicit ? { meaning: explicit } : wordById.get(word)
   if (!entry) return []
   const segments = new Set<string>()
   for (const part of entry.meaning.split(/[；;，,]/)) {
@@ -51,10 +52,15 @@ function targetMeaning(word: string): string[] {
   return [...segments]
 }
 
-function hasTarget(word: string, text: string, mode: WritingMode): boolean {
+function hasTarget(
+  word: string,
+  text: string,
+  mode: WritingMode,
+  article?: WritingArticle,
+): boolean {
   if (!text.trim()) return false
   if (mode === 'en-to-zh') {
-    const segments = targetMeaning(word)
+    const segments = targetMeaning(word, article)
     if (segments.length === 0) return text.includes(word)
     return segments.some((segment) => text.includes(segment))
   }
@@ -94,7 +100,7 @@ export function evaluateWriting({ article, mode, inputs }: WritingInput): Writin
       }
 
       for (const target of sentence.targets) {
-        const used = hasTarget(target, user, mode)
+        const used = hasTarget(target, user, mode, article)
         if (used) targetUsed.set(target, true)
         else {
           issues.push(
@@ -112,7 +118,7 @@ export function evaluateWriting({ article, mode, inputs }: WritingInput): Writin
       if (mode === 'en-to-zh' && countChinese(user) < 10) sentenceScore -= 25
       if (mode === 'zh-to-en' && countEnglishWords(user) < 6) sentenceScore -= 25
       const targetMisses = sentence.targets.filter(
-        (target) => !hasTarget(target, user, mode),
+        (target) => !hasTarget(target, user, mode, article),
       ).length
       sentenceScore -= targetMisses * 25
       if (mode === 'en-to-zh' && !/[。！？]$/.test(user)) sentenceScore -= 10
@@ -181,7 +187,7 @@ export function evaluateWriting({ article, mode, inputs }: WritingInput): Writin
     targetCoverage: article.targetWords.map((word) => ({
       word,
       used: Boolean(targetUsed.get(word)),
-      detail: targetMeaning(word).join(' / ') || word,
+      detail: targetMeaning(word, article).join(' / ') || word,
     })),
     sentences,
     summary,

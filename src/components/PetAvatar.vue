@@ -5,7 +5,7 @@
     viewBox="0 0 96 96"
     role="img"
     :aria-label="name || '宠物'"
-    :style="{ '--pet-skin': skinColor || 'var(--accent)' }"
+    :style="{ '--pet-skin': skinColor || 'var(--pet)' }"
   >
     <ellipse cx="48" cy="84" rx="25" ry="5.5" fill="var(--ink)" opacity="0.08" />
 
@@ -13,7 +13,7 @@
       v-if="species === 'cat'"
       d="M28 38 C20 44 18 56 24 64"
       fill="none"
-      stroke="var(--pet-skin, var(--accent))"
+      stroke="var(--pet-skin, var(--pet))"
       stroke-width="7"
       stroke-linecap="round"
     />
@@ -21,7 +21,7 @@
       v-else-if="species === 'dog'"
       d="M30 64 C22 66 20 76 28 80"
       fill="none"
-      stroke="var(--pet-skin, var(--accent))"
+      stroke="var(--pet-skin, var(--pet))"
       stroke-width="8"
       stroke-linecap="round"
     />
@@ -29,7 +29,7 @@
       v-else-if="species === 'dragon'"
       d="M28 64 C18 62 16 74 26 78"
       fill="none"
-      stroke="var(--pet-skin, var(--accent))"
+      stroke="var(--pet-skin, var(--pet))"
       stroke-width="7"
       stroke-linecap="round"
     />
@@ -37,7 +37,7 @@
       v-else
       d="M30 64 C24 68 24 76 30 78"
       fill="none"
-      stroke="var(--pet-skin, var(--accent))"
+      stroke="var(--pet-skin, var(--pet))"
       stroke-width="6"
       stroke-linecap="round"
     />
@@ -45,7 +45,7 @@
     <path
       v-if="species === 'dragon'"
       d="M26 48 C14 40 12 52 20 58 C24 60 28 56 30 52"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2"
       stroke-linejoin="round"
@@ -53,7 +53,7 @@
     <path
       v-if="species === 'dragon'"
       d="M70 48 C82 40 84 52 76 58 C72 60 68 56 66 52"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2"
       stroke-linejoin="round"
@@ -64,7 +64,7 @@
       cy="62"
       rx="23"
       ry="19"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2.4"
     />
@@ -72,7 +72,7 @@
     <path
       v-if="species === 'cat'"
       d="M36 26 L31 12 L44 20 Z"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2.4"
       stroke-linejoin="round"
@@ -80,7 +80,7 @@
     <path
       v-if="species === 'cat'"
       d="M60 26 L65 12 L52 20 Z"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2.4"
       stroke-linejoin="round"
@@ -88,7 +88,7 @@
     <path
       v-if="species === 'dog'"
       d="M31 30 C22 30 18 40 22 50 C26 56 32 52 34 44 Z"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2.4"
       stroke-linejoin="round"
@@ -96,7 +96,7 @@
     <path
       v-if="species === 'dog'"
       d="M65 30 C74 30 78 40 74 50 C70 56 64 52 62 44 Z"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2.4"
       stroke-linejoin="round"
@@ -120,7 +120,7 @@
     <path
       v-if="species === 'elf'"
       d="M27 36 C18 30 16 38 22 44 L30 48 Z"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2.4"
       stroke-linejoin="round"
@@ -128,7 +128,7 @@
     <path
       v-if="species === 'elf'"
       d="M69 36 C78 30 80 38 74 44 L66 48 Z"
-      fill="var(--pet-skin, var(--accent))"
+      fill="var(--pet-skin, var(--pet))"
       stroke="var(--ink)"
       stroke-width="2.4"
       stroke-linejoin="round"

@@ -207,7 +207,7 @@ p {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #1e2a32;
+  color: #ffffff;
 }
 
 .btn-primary:hover {

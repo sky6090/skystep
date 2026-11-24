@@ -25,7 +25,9 @@
       <section class="targets">
         <div class="spread">
           <span class="sub-label">今天的目标词</span>
-          <span class="caption">{{ sampleArticles.length }} 篇素材</span>
+          <span class="caption">
+            {{ isDaily ? '今日错词短文' : `${sampleArticles.length} 篇素材` }}
+          </span>
         </div>
         <div class="target-list">
           <span v-for="word in article.targetWords" :key="word" class="tag tag-accent">{{ word }}</span>
@@ -38,10 +40,12 @@
             <p class="eyebrow">{{ article.theme }}</p>
             <h2 class="h2">{{ article.title }}</h2>
           </div>
-          <button class="btn btn-sm" type="button" @click="nextArticle">换一篇</button>
+          <button class="btn btn-sm" type="button" @click="nextArticle">
+            {{ isDaily ? '换素材' : '换一篇' }}
+          </button>
         </div>
 
-        <label class="article-picker">
+        <label v-if="!isDaily" class="article-picker">
           <span class="sub-label">选文章</span>
           <select
             class="input article-select"
@@ -54,8 +58,18 @@
           </select>
         </label>
 
+        <p v-if="isDaily" class="daily-note">
+          今日错词重组：用了 {{ article.targetWords.length }} 个目标词（错词 + 收藏 + 今日新词）。
+        </p>
+
         <p class="article-hint">
-          {{ mode === 'en-to-zh' ? '把每句英文译成中文。' : '把每句中文译成英文。' }}
+          {{
+            isDaily
+              ? '这篇短文由今天的错词/收藏词重组而成。逐句译成中文，目标词的意思要出现。'
+              : mode === 'en-to-zh'
+                ? '把每句英文译成中文。'
+                : '把每句中文译成英文。'
+          }}
           先保证每句写完、目标词用上，再谈表达。
         </p>
 
@@ -178,8 +192,8 @@
       </section>
 
       <p class="footnote">
-        M3：规则批改先查目标词覆盖、句子完整度、格式和长度。
-        AI 批改是可选开关，会放在设置里，默认关闭。
+        英译中优先用今日错词重组；中译英用预制双语素材。
+        规则批改先查目标词覆盖、句子完整度、格式和长度。
       </p>
     </div>
   </AppShell>
@@ -190,7 +204,10 @@ import { computed, onMounted, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import { db, type SubmissionRow } from '@/db/db'
 import { sampleArticles, type WritingArticle } from '@/data/articles.sample'
+import { wordById, type WordEntry } from '@/data/words.sample'
+import { buildDailyArticle } from '@/domain/dailyArticle'
 import { AIError, correctWithAI } from '@/domain/ai'
+import { startOfStudyDay, studyDayKey } from '@/domain/day'
 import { evaluateWriting, type WritingMode, type WritingResult } from '@/domain/writing'
 import { useAIStore } from '@/stores/ai'
 import { useWordbookStore } from '@/stores/wordbook'
@@ -203,6 +220,8 @@ const modes: Array<{ value: WritingMode; label: string }> = [
 const wordbook = useWordbookStore()
 const ai = useAIStore()
 const mode = ref<WritingMode>('en-to-zh')
+const libraryArticle = ref<WritingArticle>(sampleArticles[0])
+const dailyArticle = ref<WritingArticle | null>(null)
 const article = ref<WritingArticle>(sampleArticles[0])
 const inputs = ref<string[]>(article.value.sentences.map(() => ''))
 const result = ref<WritingResult | null>(null)
@@ -211,6 +230,9 @@ const aiRunning = ref(false)
 const aiError = ref('')
 const history = ref<SubmissionRow[]>([])
 
+const isDaily = computed(
+  () => Boolean(dailyArticle.value) && article.value.id === dailyArticle.value?.id,
+)
 const hasAnyInput = computed(() => inputs.value.some((value) => value.trim().length > 0))
 const referenceText = computed(() =>
   article.value.sentences
@@ -221,9 +243,37 @@ const referenceText = computed(() =>
 onMounted(async () => {
   await wordbook.load()
   await ai.load()
-  const targets = new Set(
-    wordbook.rows.filter((row) => row.favorite || row.wrong).map((row) => row.wordId),
-  )
+
+  const start = startOfStudyDay().getTime()
+  const rows = wordbook.rows
+  const wrong = rows
+    .filter((row) => row.wrong && (row.lastWrongAt ?? 0) >= start)
+    .sort((a, b) => (b.lastWrongAt ?? 0) - (a.lastWrongAt ?? 0))
+  const favorites = rows
+    .filter((row) => row.favorite)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+
+  const seen = new Set<string>()
+  const cardsToday = await db.cards
+    .where('createdAt')
+    .aboveOrEqual(start)
+    .toArray()
+  const newWords = cardsToday
+    .map((row) => wordById.get(row.wordId))
+    .filter((word): word is WordEntry => Boolean(word))
+  const base = [...wrong, ...favorites]
+    .map((row) => wordById.get(row.wordId))
+    .filter((word): word is WordEntry => Boolean(word))
+    .concat(newWords)
+    .filter((word) => {
+      if (seen.has(word.id)) return false
+      seen.add(word.id)
+      return true
+    })
+
+  dailyArticle.value = base.length > 0 ? buildDailyArticle(base, studyDayKey()) : null
+
+  const targets = new Set(rows.filter((row) => row.favorite || row.wrong).map((row) => row.wordId))
   let best = sampleArticles[0]
   let bestScore = -1
   for (const candidate of sampleArticles) {
@@ -233,8 +283,9 @@ onMounted(async () => {
       bestScore = score
     }
   }
-  article.value = best
-  inputs.value = best.sentences.map(() => '')
+  libraryArticle.value = best
+  article.value = dailyArticle.value ?? best
+  inputs.value = article.value.sentences.map(() => '')
   await loadHistory()
 })
 
@@ -245,18 +296,28 @@ async function loadHistory() {
 function switchMode(next: WritingMode) {
   if (mode.value === next) return
   mode.value = next
+  article.value =
+    next === 'en-to-zh' && dailyArticle.value ? dailyArticle.value : libraryArticle.value
   reset()
 }
 
 function nextArticle() {
+  if (isDaily.value) {
+    article.value = libraryArticle.value
+    reset()
+    return
+  }
   const index = sampleArticles.findIndex((candidate) => candidate.id === article.value.id)
-  article.value = sampleArticles[(index + 1) % sampleArticles.length]
+  const next = sampleArticles[(index + 1) % sampleArticles.length]
+  libraryArticle.value = next
+  article.value = next
   reset()
 }
 
 function selectArticle(id: string) {
   const next = sampleArticles.find((candidate) => candidate.id === id)
   if (!next) return
+  libraryArticle.value = next
   article.value = next
   reset()
 }
@@ -424,6 +485,16 @@ async function runAI() {
   min-height: 38px;
   padding: 0 8px;
   font-size: 12px;
+}
+
+.daily-note {
+  padding: 7px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .sentence-list {

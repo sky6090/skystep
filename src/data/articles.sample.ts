@@ -10,6 +10,8 @@ export interface WritingArticle {
   theme: string
   targetWords: string[]
   sentences: ArticleSentence[]
+  targetMeanings?: Record<string, string>
+  generated?: boolean
 }
 
 export const sampleArticles: WritingArticle[] = [
