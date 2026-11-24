@@ -37,9 +37,16 @@
         <span v-else class="muted">新词已完成</span>
       </div>
 
-      <button class="btn btn-primary btn-block continue" type="button" @click="continueStudy">
-        {{ continueLabel }}
-      </button>
+      <div class="home-actions">
+        <RouterLink to="/learn" class="btn btn-primary home-action">
+          <span>学习</span>
+          <span class="action-count">{{ newRemaining }}</span>
+        </RouterLink>
+        <RouterLink to="/review" class="btn btn-primary home-action">
+          <span>复习</span>
+          <span class="action-count">{{ session.dueCount }}</span>
+        </RouterLink>
+      </div>
 
       <div class="quick-grid">
         <RouterLink to="/wordbook" class="quick-card">
@@ -126,24 +133,10 @@ const steps = computed<
   },
 ])
 
-const continueLabel = computed(() => {
-  if (session.dueCount > 0) return '继续复习'
-  if (newRemaining.value > 0) return '学新词'
-  if (session.wroteToday === 0) return '去练习'
-  return '去单词本'
-})
-
 function go(key: 'review' | 'learn' | 'writing') {
   if (key === 'review') router.push('/review')
   else if (key === 'learn') router.push('/learn')
   else router.push('/writing')
-}
-
-function continueStudy() {
-  if (session.dueCount > 0) router.push('/review')
-  else if (newRemaining.value > 0) router.push('/learn')
-  else if (session.wroteToday === 0) router.push('/writing')
-  else router.push('/wordbook')
 }
 </script>
 
@@ -193,9 +186,28 @@ function continueStudy() {
   font-size: 13px;
 }
 
-.continue {
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.home-action {
+  display: flex;
   min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-size: 16px;
+}
+
+.action-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 22%);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .quick-grid {
