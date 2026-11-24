@@ -1,3 +1,4 @@
+import { formatMeaningOption } from '@/domain/learnQuiz'
 import { sampleWords, type WordEntry } from './words.sample'
 
 export interface PlacementQuestion {
@@ -25,12 +26,13 @@ function shuffled<T>(items: T[]): T[] {
 }
 
 function questionFromWord(word: WordEntry, pool: WordEntry[]): PlacementQuestion {
-  const answer = word.meaning
+  const answer = formatMeaningOption(word)
   const distractors = [
     ...new Set(
       shuffled(pool)
-        .filter((candidate) => candidate.id !== word.id && candidate.meaning !== answer)
-        .map((candidate) => candidate.meaning),
+        .filter((candidate) => candidate.id !== word.id)
+        .map((candidate) => formatMeaningOption(candidate))
+        .filter((meaning) => meaning !== answer),
     ),
   ].slice(0, 3)
   const options = shuffled([answer, ...distractors])
