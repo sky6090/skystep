@@ -8,6 +8,7 @@ export type ThemeMode = 'auto' | 'day' | 'night'
 export type LearnMode = 'en-to-zh' | 'zh-to-en' | 'spelling'
 
 export interface Profile {
+  userName: string
   petSpecies: PetSpecies
   petName: string
   onboarded: boolean
@@ -19,6 +20,7 @@ export interface Profile {
 }
 
 const DEFAULT_PROFILE: Profile = {
+  userName: '',
   petSpecies: 'cat',
   petName: '',
   onboarded: false,
@@ -51,7 +53,9 @@ export const useSettingsStore = defineStore('settings', () => {
     name: string,
     level: VocabLevel = 'intermediate',
     estimatedVocab = 0,
+    userName = '',
   ) {
+    profile.value.userName = userName.trim() || '同学'
     profile.value.petSpecies = species
     profile.value.petName = name.trim() || '小步'
     profile.value.onboarded = true
@@ -63,6 +67,11 @@ export const useSettingsStore = defineStore('settings', () => {
   async function setVocabPlacement(level: VocabLevel, estimatedVocab: number) {
     profile.value.vocabLevel = level
     profile.value.estimatedVocab = estimatedVocab
+    await save()
+  }
+
+  async function setUserName(name: string) {
+    profile.value.userName = name.trim() || '同学'
     await save()
   }
 
@@ -91,5 +100,6 @@ export const useSettingsStore = defineStore('settings', () => {
     setTheme,
     setLearnMode,
     setVocabPlacement,
+    setUserName,
   }
 })

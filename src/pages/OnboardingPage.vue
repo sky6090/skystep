@@ -7,7 +7,28 @@
 
     <div v-if="step === 1" class="stage">
       <p class="eyebrow">first step</p>
-      <h1 class="display">先选一个同桌。</h1>
+      <h1 class="display">先给自己起个名字。</h1>
+      <p class="lede">这个名字会出现在首页。之后你也可以在设置里改。</p>
+
+      <label class="field">
+        <span class="field-label">你的名字 / 昵称</span>
+        <input
+          v-model="userName"
+          class="input"
+          maxlength="12"
+          placeholder="比如：小林、阿灯、Sky"
+          autocomplete="off"
+        />
+      </label>
+
+      <button class="btn btn-primary btn-block" type="button" @click="step = 2">
+        下一步：选宠物
+      </button>
+    </div>
+
+    <div v-else-if="step === 2" class="stage">
+      <p class="eyebrow">pick a companion</p>
+      <h1 class="display">选一个同桌。</h1>
       <p class="lede">
         它会住在你的书桌旁。你复习、学新词、写翻译，它慢慢长大。
         四只宠物数值一样，只看眼缘。
@@ -28,12 +49,15 @@
         </button>
       </div>
 
-      <button class="btn btn-primary btn-block" type="button" @click="step = 2">
+      <button class="btn btn-primary btn-block" type="button" @click="step = 3">
         就它了
+      </button>
+      <button class="btn btn-ghost btn-block" type="button" @click="step = 1">
+        上一步
       </button>
     </div>
 
-    <div v-else-if="step === 2" class="stage">
+    <div v-else-if="step === 3" class="stage">
       <p class="eyebrow">give it a name</p>
       <h1 class="display">给它起个名字。</h1>
       <p class="lede">第一次起名免费。以后想改，要用改名卡。</p>
@@ -54,10 +78,10 @@
         />
       </label>
 
-      <button class="btn btn-primary btn-block" type="button" @click="step = 3">
+      <button class="btn btn-primary btn-block" type="button" @click="step = 4">
         下一步：测词汇量
       </button>
-      <button class="btn btn-ghost btn-block" type="button" @click="step = 1">换一只</button>
+      <button class="btn btn-ghost btn-block" type="button" @click="step = 2">上一步</button>
     </div>
 
     <div v-else class="stage">
@@ -133,8 +157,9 @@ const router = useRouter()
 const settings = useSettingsStore()
 const retest = route.query.retest === '1'
 
-const step = ref(retest ? 3 : 1)
+const step = ref(retest ? 4 : 1)
 const selected = ref<PetSpecies>('cat')
+const userName = ref('')
 const name = ref('')
 const saving = ref(false)
 const placementIndex = ref(0)
@@ -179,6 +204,7 @@ async function finish() {
     name.value,
     placementResult.value?.level ?? 'intermediate',
     placementResult.value?.estimated ?? 0,
+    userName.value,
   )
   await router.replace('/')
 }

@@ -4,7 +4,7 @@
       <header class="home-head">
         <div>
           <p class="eyebrow">{{ greeting }}</p>
-          <h1 class="display">{{ settings.profile.petName || '小步' }} 在等你。</h1>
+          <h1 class="display">{{ greetingTitle }}</h1>
         </div>
         <span class="today-count">{{ session.reviewedToday }} 张复习</span>
       </header>
@@ -104,6 +104,13 @@ const greeting = computed(() => {
   if (hour < 12) return '早上好'
   if (hour < 18) return '下午好'
   return '晚上好'
+})
+
+const greetingTitle = computed(() => {
+  const petName = settings.profile.petName || '小步'
+  return settings.profile.userName
+    ? `${settings.profile.userName}，${petName} 在等你。`
+    : `${petName} 在等你。`
 })
 
 const newRemaining = computed(() =>

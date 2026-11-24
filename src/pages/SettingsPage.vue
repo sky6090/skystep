@@ -19,6 +19,23 @@
 
       <section class="card section">
         <div class="section-head">
+          <h2 class="h3">你的名字</h2>
+          <span class="muted small">首页显示</span>
+        </div>
+        <div class="name-row">
+          <input
+            v-model="userNameDraft"
+            class="input"
+            maxlength="12"
+            placeholder="比如：小林、阿灯、Sky"
+            autocomplete="off"
+          />
+          <button class="btn btn-sm" type="button" @click="saveUserName">保存</button>
+        </div>
+      </section>
+
+      <section class="card section">
+        <div class="section-head">
           <h2 class="h3">每日新词</h2>
           <span class="muted small">{{ daily }} 个</span>
         </div>
@@ -182,6 +199,7 @@ import { useSettingsStore, type LearnMode, type ThemeMode } from '@/stores/setti
 const settings = useSettingsStore()
 const ai = useAIStore()
 const daily = ref(settings.profile.dailyNewWords)
+const userNameDraft = ref(settings.profile.userName)
 const baseUrl = ref(ai.config.baseUrl)
 const model = ref(ai.config.model)
 const keyDraft = ref('')
@@ -224,6 +242,11 @@ const learnModes: Array<{ value: LearnMode; label: string }> = [
   { value: 'zh-to-en', label: '中 → 英' },
   { value: 'spelling', label: '拼写' },
 ]
+
+async function saveUserName() {
+  await settings.setUserName(userNameDraft.value)
+  userNameDraft.value = settings.profile.userName
+}
 
 async function saveDaily() {
   await settings.setDailyNewWords(daily.value)
@@ -354,6 +377,16 @@ async function resetData() {
 .profile-copy strong {
   font-size: 17px;
   font-weight: 650;
+}
+
+.name-row {
+  display: flex;
+  gap: 8px;
+}
+
+.name-row .input {
+  flex: 1;
+  min-width: 0;
 }
 
 .section {
