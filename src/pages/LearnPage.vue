@@ -159,15 +159,35 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import { db } from '@/db/db'
-import { entryToWord, loadDictionary } from '@/data/dictionary'
+import {
+  dictionaryMap,
+  entryToWord,
+  loadDictionary,
+} from '@/data/dictionary'
 import { buildQuizOptions } from '@/domain/learnQuiz'
 import { sampleWords, type WordEntry } from '@/data/words.sample'
 import { applyRating, createNewCard, Rating } from '@/domain/fsrs'
+import { studyDayKey } from '@/domain/day'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
 import { useWordbookStore } from '@/stores/wordbook'
 
 const phases = ['英 → 中', '中 → 英', '拼写'] as const
+
+interface DailyNewQueue {
+  day: string
+  level: string
+  ids: string[]
+}
+
+function shuffled<T>(items: T[]): T[] {
+  const list = [...items]
+  for (let index = list.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(Math.random() * (index + 1))
+    ;[list[index], list[target]] = [list[target], list[index]]
+  }
+  return list
+}
 
 const settings = useSettingsStore()
 const session = useSessionStore()
@@ -232,29 +252,68 @@ async function load() {
   await session.refresh()
   const existing = new Set((await db.cards.toArray()).map((row) => row.wordId))
   const limit = Math.max(0, settings.profile.dailyNewWords - session.learnedToday)
-  const seed = sampleWords
-    .filter((word) => !existing.has(word.id))
-    .slice(0, limit)
 
-  if (seed.length < limit) {
-    const entries = await loadDictionary()
-    const seen = new Set(seed.map((word) => word.id))
-    const level = settings.profile.vocabLevel
-    const examWords = entries.filter((entry) => {
+  if (limit === 0) {
+    queue.value = []
+    finishQueue()
+    return
+  }
+
+  const level = settings.profile.vocabLevel
+  const entries = await loadDictionary()
+  const dictMap = dictionaryMap(entries)
+  const pool = entries
+    .filter((entry) => {
       if (level === 'basic') return entry.tag === 'CET-4' || entry.tag === '高频'
       if (level === 'advanced') return entry.tag === 'CET-6' || entry.tag === '考研'
       return entry.tag === 'CET-6' || entry.tag === 'CET-4'
     })
-    const commonWords = entries.filter((entry) => entry.tag === '高频')
-    const extras = [...examWords, ...commonWords]
-      .filter((entry) => !existing.has(entry.id) && !seen.has(entry.id))
-      .slice(0, limit - seed.length)
-      .map(entryToWord)
-    queue.value = [...seed, ...extras]
-  } else {
-    queue.value = seed
+    .filter((entry) => !existing.has(entry.id))
+
+  const storedRow = await db.settings.get('dailyNewQueue')
+  const stored = storedRow?.value as Partial<DailyNewQueue> | undefined
+  const storedIds =
+    stored?.day === studyDayKey() &&
+    stored.level === level &&
+    Array.isArray(stored.ids)
+      ? stored.ids.filter(
+          (id): id is string =>
+            typeof id === 'string' &&
+            !existing.has(id) &&
+            dictMap.has(id),
+        )
+      : []
+
+  const selectedIds = [...storedIds]
+  const selected = new Set(selectedIds)
+  if (selectedIds.length < settings.profile.dailyNewWords) {
+    for (const entry of shuffled(pool)) {
+      if (selectedIds.length >= settings.profile.dailyNewWords) break
+      if (selected.has(entry.id)) continue
+      selected.add(entry.id)
+      selectedIds.push(entry.id)
+    }
   }
 
+  await db.settings.put({
+    key: 'dailyNewQueue',
+    value: {
+      day: studyDayKey(),
+      level,
+      ids: selectedIds,
+    } satisfies DailyNewQueue,
+  })
+
+  queue.value = selectedIds
+    .slice(0, limit)
+    .map((id) => dictMap.get(id))
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+    .map(entryToWord)
+
+  finishQueue()
+}
+
+function finishQueue() {
   phaseIndex.value = 0
   wordIndex.value = 0
   activeQueue.value = queue.value
