@@ -151,25 +151,20 @@
       <section class="card settle-card">
         <div class="spread">
           <div>
-            <h2 class="h3">今日结算</h2>
-            <p class="muted small">
-              复习完成率、正确率、写作得分、连续天数一起算经验；每天只结算一次。
-            </p>
+            <p class="eyebrow">auto settlement</p>
+            <h2 class="h3">昨日学习结算</h2>
           </div>
-          <button
-            class="btn btn-primary btn-sm"
-            type="button"
-            :disabled="settling || !canSettle"
-            @click="settle"
-          >
-            {{ settledToday ? '已结算' : !hasActivity ? '先学习' : settling ? '结算中…' : '结算今日' }}
-          </button>
+          <span v-if="settlementDay" class="tag tag-accent">{{ settlementDay }}</span>
         </div>
-        <p v-if="!hasActivity && !settledToday" class="caption">
-          今天还没有学习记录，学完再来结算。
-        </p>
-        <p v-if="pet.lastAward" class="caption award">
-          上次结算：+{{ pet.lastAward.xp }} 经验 · +{{ pet.lastAward.coins }} 金币
+
+        <template v-if="pet.state.lastSettlement">
+          <p class="award">{{ pet.state.lastSettlement.message }}</p>
+          <p class="caption">
+            每天凌晨 4:00 自动结算前一天的学习记录；打开 App 时会补算错过的结算。
+          </p>
+        </template>
+        <p v-else class="muted small">
+          每天凌晨 4:00 自动结算前一天，不需要手动点结算。第一次结算会在明天凌晨出现。
         </p>
       </section>
 
@@ -197,7 +192,6 @@ const session = useSessionStore()
 const message = ref('')
 const renaming = ref(false)
 const nameDraft = ref('')
-const settling = ref(false)
 const weeklyDays = ref(0)
 const weeklyWritings = ref(0)
 const learnedCount = ref(0)
@@ -205,13 +199,14 @@ const writingDays = ref(0)
 
 const stage = computed(() => pet.stageInfo)
 const skinColor = computed(() => pet.equippedSkinItem?.color ?? '')
-const settledToday = computed(() => pet.state.lastSettledDay === studyDayKey())
+const settlementDay = computed(() => {
+  const day = pet.state.lastSettlement?.day
+  if (!day) return ''
+  const [, month, date] = day.split('-')
+  return `${Number(month)} 月 ${Number(date)} 日`
+})
 const weeklyComplete = computed(() => weeklyDays.value >= 5 && weeklyWritings.value >= 3)
 const stageComplete = computed(() => learnedCount.value >= 1000 && writingDays.value >= 30)
-const hasActivity = computed(
-  () => session.reviewedToday > 0 || session.learnedToday > 0 || session.wroteToday > 0,
-)
-const canSettle = computed(() => !settledToday.value && hasActivity.value)
 const dailyItems = computed(() => [
   {
     label: '新词',
@@ -232,6 +227,7 @@ const dailyItems = computed(() => [
 
 onMounted(async () => {
   await pet.load()
+  await pet.settleDue()
   await settings.load()
   await session.refresh()
   await loadGoals()
@@ -258,17 +254,6 @@ async function loadGoals() {
   ).size
   const wordbook = await db.wordbook.toArray()
   learnedCount.value = wordbook.filter((row) => row.learned).length
-}
-
-async function settle() {
-  if (settling.value || !canSettle.value) return
-  settling.value = true
-  try {
-    const result = await pet.settleToday()
-    message.value = result.message
-  } finally {
-    settling.value = false
-  }
 }
 
 async function feed() {

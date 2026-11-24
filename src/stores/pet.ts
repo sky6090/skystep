@@ -2,7 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { db } from '@/db/db'
 import { shopById, shopItems, type ShopItem } from '@/data/shop'
-import { startOfStudyDay, studyDayKey, studyWeekKey } from '@/domain/day'
+import {
+  nextStudyDayKey,
+  previousStudyDayKey,
+  studyDayKey,
+  studyDayRange,
+  studyWeekKey,
+} from '@/domain/day'
 import {
   computeSettlement,
   stageForXp,
@@ -11,6 +17,14 @@ import {
 } from '@/domain/pet'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
+
+export interface PetSettlement {
+  day: string
+  xp: number
+  coins: number
+  message: string
+  settledAt: number
+}
 
 export interface PetState {
   xp: number
@@ -21,6 +35,7 @@ export interface PetState {
   owned: string[]
   equippedSkin: string | null
   lastSettledDay: string
+  lastSettlement?: PetSettlement
   lastDecayDay: string
   lastInteractDay: string
   claimedWeekly: string
@@ -115,12 +130,15 @@ export const usePetStore = defineStore('pet', () => {
     await save()
   }
 
-  async function buildMetrics(): Promise<PetMetrics> {
+  async function buildMetrics(day: string): Promise<PetMetrics> {
     const settings = useSettingsStore()
     const session = useSessionStore()
     await session.refresh()
-    const start = startOfStudyDay().getTime()
-    const logs = await db.reviewLogs.where('reviewedAt').aboveOrEqual(start).toArray()
+    const { start, end } = studyDayRange(day)
+    const logs = await db.reviewLogs
+      .where('reviewedAt')
+      .between(start, end, true, false)
+      .toArray()
     const reviews = logs.filter((log) => log.kind === 'review')
     const due = session.dueCount
     const reviewDenominator = reviews.length + due
@@ -133,27 +151,31 @@ export const usePetStore = defineStore('pet', () => {
         }, 0) / logs.length
       : 0
 
+    const learned = await db.cards
+      .where('createdAt')
+      .between(start, end, true, false)
+      .count()
+
     const submissions = await db.submissions
       .where('createdAt')
-      .aboveOrEqual(start)
+      .between(start, end, true, false)
       .toArray()
     submissions.sort((a, b) => a.createdAt - b.createdAt)
     const W = submissions.length ? submissions[0].score : 0
 
-    const allLogs = await db.reviewLogs.orderBy('reviewedAt').reverse().limit(600).toArray()
-    const allSubs = await db.submissions.orderBy('createdAt').reverse().limit(200).toArray()
-    const days = new Set<string>()
-    allLogs.forEach((log) => days.add(studyDayKey(new Date(log.reviewedAt))))
-    allSubs.forEach((submission) => days.add(studyDayKey(new Date(submission.createdAt))))
+    const allLogs = await db.reviewLogs.orderBy('reviewedAt').reverse().limit(2000).toArray()
+    const allSubs = await db.submissions.orderBy('createdAt').reverse().limit(500).toArray()
+    const activeDays = new Set<string>()
+    allLogs.forEach((log) => activeDays.add(studyDayKey(new Date(log.reviewedAt))))
+    allSubs.forEach((submission) => activeDays.add(studyDayKey(new Date(submission.createdAt))))
     let streak = 0
-    const cursor = startOfStudyDay()
-    while (streak < 7 && days.has(studyDayKey(cursor))) {
+    const cursor = new Date(studyDayRange(day).start)
+    while (streak < 365 && activeDays.has(studyDayKey(cursor))) {
       streak += 1
       cursor.setDate(cursor.getDate() - 1)
     }
 
-    const G =
-      session.learnedToday >= settings.profile.dailyNewWords && R >= 0.8 ? 1 : 0
+    const G = learned >= settings.profile.dailyNewWords && R >= 0.8 ? 1 : 0
 
     return {
       R,
@@ -166,13 +188,31 @@ export const usePetStore = defineStore('pet', () => {
     }
   }
 
-  async function settleToday() {
-    const today = studyDayKey()
-    if (state.value.lastSettledDay === today) {
-      return { awarded: false, message: '今天已经结算过了。' }
-    }
+  async function settleDue() {
     await applyDecay()
-    const metrics = await buildMetrics()
+    const target = previousStudyDayKey()
+    if (!state.value.lastSettledDay) {
+      state.value.lastSettledDay = target
+      await save()
+      return { settledDays: 0, message: '自动结算已就绪。' }
+    }
+    if (state.value.lastSettledDay >= target) {
+      return { settledDays: 0, message: '没有需要结算的昨日记录。' }
+    }
+
+    let cursor = nextStudyDayKey(state.value.lastSettledDay)
+    let settledDays = 0
+    let lastMessage = ''
+    while (cursor <= target) {
+      lastMessage = await settleDay(cursor)
+      settledDays += 1
+      cursor = nextStudyDayKey(cursor)
+    }
+    return { settledDays, message: lastMessage }
+  }
+
+  async function settleDay(day: string) {
+    const metrics = await buildMetrics(day)
     const award = computeSettlement(metrics)
 
     state.value.xp += award.xp
@@ -184,18 +224,24 @@ export const usePetStore = defineStore('pet', () => {
       100,
       Math.max(0, state.value.mood + (metrics.G ? 5 : 0) - (state.value.satiety < 30 ? 8 : 0)),
     )
-    state.value.lastSettledDay = today
-    await unlockStageRewards()
-    await save()
+    state.value.lastSettledDay = day
 
-    const result = {
-      awarded: true,
+    const message =
+      award.xp === 0 && award.coins === 0
+        ? '昨日没有学习记录，本次结算 0 经验。'
+        : `昨日学习结算：+${award.xp} 经验，+${award.coins} 金币。${metrics.G ? ' 日目标完成，+1 基础粮。' : ''}`
+    state.value.lastSettlement = {
+      day,
       xp: award.xp,
       coins: award.coins,
-      message: `结算完成：+${award.xp} 经验，+${award.coins} 金币。${metrics.G ? ' 日目标完成，+1 基础粮。' : ''}`,
+      message,
+      settledAt: Date.now(),
     }
-    lastAward.value = { xp: result.xp, coins: result.coins, message: result.message }
-    return result
+    lastAward.value = { xp: award.xp, coins: award.coins, message }
+
+    await unlockStageRewards()
+    await save()
+    return message
   }
 
   async function unlockStageRewards() {
@@ -309,7 +355,7 @@ export const usePetStore = defineStore('pet', () => {
     stageClaimed,
     load,
     save,
-    settleToday,
+    settleDue,
     feed,
     buy,
     equipSkin,
