@@ -52,6 +52,28 @@ export function entryToWord(entry: DictionaryEntry): WordEntry {
   }
 }
 
+function editDistance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index)
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i]
+    let rowMin = i
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      const value = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + cost,
+      )
+      current[j] = value
+      rowMin = Math.min(rowMin, value)
+    }
+    if (rowMin > max) return max + 1
+    previous.splice(0, previous.length, ...current)
+  }
+  return previous[b.length]
+}
+
 export function searchDictionary(
   entries: DictionaryEntry[],
   query: string,
@@ -63,11 +85,15 @@ export function searchDictionary(
     return (examWords.length ? examWords : entries).slice(0, 12)
   }
   const q = raw.toLowerCase()
+  const englishQuery = /^[a-z][a-z' -]*$/i.test(raw)
 
   const exact: DictionaryEntry[] = []
+  const formExact: DictionaryEntry[] = []
   const prefix: DictionaryEntry[] = []
+  const formPrefix: DictionaryEntry[] = []
   const contains: DictionaryEntry[] = []
   const chinese: DictionaryEntry[] = []
+  const near: Array<{ entry: DictionaryEntry; distance: number }> = []
   const seen = new Set<string>()
 
   const push = (bucket: DictionaryEntry[], entry: DictionaryEntry) => {
@@ -78,12 +104,21 @@ export function searchDictionary(
 
   for (const entry of entries) {
     const id = entry.id
+    const forms = entry.forms ?? []
     if (id === q) {
       push(exact, entry)
       continue
     }
+    if (forms.some((form) => form.toLowerCase() === q)) {
+      push(formExact, entry)
+      continue
+    }
     if (id.startsWith(q)) {
       push(prefix, entry)
+      continue
+    }
+    if (forms.some((form) => form.toLowerCase().startsWith(q))) {
+      push(formPrefix, entry)
       continue
     }
     if (id.includes(q)) {
@@ -93,6 +128,28 @@ export function searchDictionary(
     if (entry.t.includes(raw)) {
       push(chinese, entry)
     }
+  }
+
+  if (englishQuery && q.length >= 4) {
+    const maxDistance = q.length >= 7 ? 2 : 1
+    for (const entry of entries) {
+      if (seen.has(entry.id)) continue
+      const candidates = [entry.id, ...(entry.forms ?? [])].map((value) =>
+        value.toLowerCase(),
+      )
+      let best = maxDistance + 1
+      for (const candidate of candidates) {
+        best = Math.min(best, editDistance(q, candidate, maxDistance))
+        if (best === 0) break
+      }
+      if (best <= maxDistance) near.push({ entry, distance: best })
+    }
+    near.sort(
+      (a, b) =>
+        a.distance - b.distance ||
+        a.entry.rank - b.entry.rank ||
+        a.entry.id.length - b.entry.id.length,
+    )
   }
 
   const chineseScore = (entry: DictionaryEntry) => {
@@ -109,7 +166,18 @@ export function searchDictionary(
       a.rank - b.rank,
   )
 
-  return [...exact, ...prefix, ...contains, ...chinese].slice(0, limit)
+  const englishResults = [
+    ...exact,
+    ...formExact,
+    ...prefix,
+    ...formPrefix,
+    ...contains,
+    ...near.map((item) => item.entry),
+  ]
+  return (englishQuery
+    ? [...englishResults, ...chinese]
+    : [...chinese, ...englishResults]
+  ).slice(0, limit)
 }
 
 export function dictionaryMap(entries: DictionaryEntry[]): Map<string, DictionaryEntry> {

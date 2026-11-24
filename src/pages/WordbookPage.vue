@@ -28,6 +28,19 @@
         <input v-model="query" class="input" type="search" placeholder="搜索单词、释义或笔记" />
       </label>
 
+      <div class="filters" role="group" aria-label="筛选单词本">
+        <button
+          v-for="item in filters"
+          :key="item.key"
+          class="filter-chip"
+          :class="{ active: filter === item.key }"
+          type="button"
+          @click="filter = item.key"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+
       <section v-if="items.length === 0" class="empty card">
         <p class="empty-title">{{ emptyText.title }}</p>
         <p class="muted small">{{ emptyText.desc }}</p>
@@ -99,17 +112,26 @@ import {
   loadDictionary,
   type DictionaryEntry,
 } from '@/data/dictionary'
+import { startOfStudyDay } from '@/domain/day'
 import { useSessionStore } from '@/stores/session'
 import { useWordbookStore } from '@/stores/wordbook'
 
 type TabKey = 'favorite' | 'learned' | 'wrong' | 'custom'
+type FilterKey = 'all' | 'today' | 'wrongToday' | 'noted'
 
 const wordbook = useWordbookStore()
 const session = useSessionStore()
 const dictionary = ref<DictionaryEntry[]>([])
 const dictMap = ref(new Map<string, DictionaryEntry>())
 const tab = ref<TabKey>('favorite')
+const filter = ref<FilterKey>('all')
 const query = ref('')
+const filters: Array<{ key: FilterKey; label: string }> = [
+  { key: 'all', label: '全部' },
+  { key: 'today', label: '今日学习' },
+  { key: 'wrongToday', label: '今日错词' },
+  { key: 'noted', label: '有笔记' },
+]
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'favorite', label: '收藏' },
@@ -128,14 +150,15 @@ const counts = computed<Record<TabKey, number>>(() => ({
 const items = computed(() =>
   wordbook.rows
     .filter((row) => matchesTab(row))
+    .filter((row) => matchesFilter(row))
     .filter((row) => matchesQuery(row))
     .map((row) => ({ row, word: wordFor(row) }))
     .filter((item): item is { row: WordbookRow; word: WordEntry } => item.word !== null),
 )
 
 const emptyText = computed(() => {
-  if (query.value.trim()) {
-    return { title: '没有匹配的词。', desc: '换一个关键词，或者清空搜索。' }
+  if (query.value.trim() || filter.value !== 'all') {
+    return { title: '没有符合条件的词。', desc: '换一个关键词，或切回「全部」。' }
   }
   if (tab.value === 'favorite') {
     return { title: '收藏册还是空的。', desc: '学新词或查词典时点一下 ☆，词就会落进来。' }
@@ -171,6 +194,16 @@ function matchesTab(row: WordbookRow) {
   if (tab.value === 'learned') return row.learned
   if (tab.value === 'wrong') return Boolean(row.wrong)
   return row.source === 'custom'
+}
+
+function matchesFilter(row: WordbookRow) {
+  const start = startOfStudyDay().getTime()
+  if (filter.value === 'today') return row.createdAt >= start
+  if (filter.value === 'wrongToday') {
+    return Boolean(row.wrong) && (row.lastWrongAt ?? 0) >= start
+  }
+  if (filter.value === 'noted') return row.note.trim().length > 0
+  return true
 }
 
 function matchesQuery(row: WordbookRow) {
@@ -271,6 +304,29 @@ function sourceLabel(source: WordbookRow['source']) {
 
 .search {
   display: block;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.filter-chip {
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.filter-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 600;
 }
 
 .empty {
