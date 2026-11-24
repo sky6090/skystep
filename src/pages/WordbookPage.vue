@@ -162,6 +162,20 @@ const items = computed(() => {
         (b.row.wrongCount ?? 0) - (a.row.wrongCount ?? 0) ||
         (b.row.lastWrongAt ?? 0) - (a.row.lastWrongAt ?? 0),
     )
+  } else if (tab.value === 'favorite') {
+    list.sort(
+      (a, b) =>
+        (b.row.favoritedAt ?? b.row.updatedAt) -
+        (a.row.favoritedAt ?? a.row.updatedAt),
+    )
+  } else if (tab.value === 'learned') {
+    list.sort(
+      (a, b) =>
+        (b.row.learnedAt ?? b.row.updatedAt) -
+        (a.row.learnedAt ?? a.row.updatedAt),
+    )
+  } else {
+    list.sort((a, b) => b.row.updatedAt - a.row.updatedAt)
   }
   return list
 })
