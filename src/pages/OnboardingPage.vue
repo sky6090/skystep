@@ -122,19 +122,35 @@
               v-for="(option, index) in questions[placementIndex].options"
               :key="option"
               class="placement-option"
+              :class="placementOptionClass(index)"
               type="button"
+              :disabled="placementAnswered"
               @click="answerPlacement(index)"
             >
               {{ option }}
             </button>
             <button
               class="placement-option unknown"
+              :class="{ selected: placementSelected === -1 }"
               type="button"
+              :disabled="placementAnswered"
               @click="answerPlacement(-1)"
             >
               不认识
             </button>
           </div>
+          <p
+            v-if="placementAnswered"
+            class="placement-feedback"
+            :class="placementCorrect ? 'ok' : 'wrong'"
+          >
+            {{
+              placementCorrect
+                ? '回答正确'
+                : `回答错误，正确答案：${questions[placementIndex].options[questions[placementIndex].answer]}`
+            }}
+            · 2秒后进入下一题
+          </p>
         </div>
       </template>
 
@@ -162,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandMark from '@/components/BrandMark.vue'
 import PetAvatar from '@/components/PetAvatar.vue'
@@ -192,6 +208,10 @@ const placementPool = ref<WordEntry[]>([])
 const questions = ref<ReturnType<typeof createPlacementQuestionsFromPool>>([])
 const placementAnswers = ref<number[]>([])
 const placementResult = ref<PlacementResult | null>(null)
+const placementAnswered = ref(false)
+const placementSelected = ref<number | null>(null)
+const placementCorrect = ref(false)
+let placementTimer: number | undefined
 
 onMounted(async () => {
   try {
@@ -214,26 +234,66 @@ const speciesOptions: Array<{ id: PetSpecies; name: string; desc: string }> = [
   { id: 'elf', name: '精灵', desc: '机灵，耳朵会动' },
 ]
 
-function answerPlacement(choice: number) {
-  placementAnswers.value.push(choice)
-  if (placementIndex.value + 1 < questions.value.length) {
-    placementIndex.value += 1
-  } else {
-    placementResult.value = evaluatePlacement(
-      placementAnswers.value,
-      questions.value,
-    )
+function placementOptionClass(index: number) {
+  if (!placementAnswered.value) return {}
+  const question = questions.value[placementIndex.value]
+  return {
+    correct: index === question?.answer,
+    wrong: index === placementSelected.value && index !== question?.answer,
   }
 }
 
+function answerPlacement(choice: number) {
+  if (placementAnswered.value || !questions.value.length) return
+  const question = questions.value[placementIndex.value]
+  if (!question) return
+  placementAnswered.value = true
+  placementSelected.value = choice
+  placementCorrect.value = choice === question.answer
+  placementAnswers.value.push(choice)
+  clearPlacementTimer()
+  placementTimer = window.setTimeout(advancePlacement, 2000)
+}
+
+function advancePlacement() {
+  clearPlacementTimer()
+  if (placementIndex.value + 1 < questions.value.length) {
+    placementIndex.value += 1
+    resetPlacementStep()
+    return
+  }
+  placementResult.value = evaluatePlacement(
+    placementAnswers.value,
+    questions.value,
+  )
+}
+
+function resetPlacementStep() {
+  placementAnswered.value = false
+  placementSelected.value = null
+  placementCorrect.value = false
+}
+
+function clearPlacementTimer() {
+  if (placementTimer !== undefined) {
+    window.clearTimeout(placementTimer)
+    placementTimer = undefined
+  }
+}
+
+onBeforeUnmount(clearPlacementTimer)
+
 function restartPlacement() {
+  clearPlacementTimer()
   questions.value = createPlacementQuestionsFromPool(placementPool.value, 15)
   placementIndex.value = 0
   placementAnswers.value = []
   placementResult.value = null
+  resetPlacementStep()
 }
 
 function exitPlacement() {
+  clearPlacementTimer()
   if (retest) {
     router.replace('/settings')
     return
@@ -441,6 +501,43 @@ async function finish() {
 .placement-option.unknown:hover {
   border-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+}
+
+.placement-option.correct {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--surface));
+  color: var(--success);
+  font-weight: 600;
+}
+
+.placement-option.wrong,
+.placement-option.unknown.selected {
+  border-style: solid;
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+}
+
+.placement-option:disabled {
+  cursor: default;
+}
+
+.placement-feedback {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.placement-feedback.ok {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.placement-feedback.wrong {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .placement-result {
