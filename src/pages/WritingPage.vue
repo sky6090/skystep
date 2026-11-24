@@ -23,7 +23,7 @@
       </div>
 
       <section v-if="!libraryMode && !dailyArticle" class="empty card">
-        <p class="empty-title">今天没有错词或收藏词，练习为空。</p>
+        <p class="empty-title">今天没有错词或今日收藏，练习为空。</p>
         <p class="muted small">
           去学新词或复习，把不认识的词、想留住的词收进来；每多一个，今日练习就多一组中英句子。
         </p>
@@ -82,7 +82,7 @@
         </label>
 
         <p v-if="isDaily" class="daily-note">
-          今日错词 / 收藏：{{ article.targetWords.length }} 个词，英译中 {{ article.sentences.length }} 句 + 中译英 {{ article.sentences.length }} 句。
+          今日错词 / 今日收藏：{{ article.targetWords.length }} 个词，英译中 {{ article.sentences.length }} 句 + 中译英 {{ article.sentences.length }} 句。
         </p>
 
         <p class="article-hint">
@@ -215,8 +215,8 @@
       </section>
 
       <p class="footnote">
-        每日练习句数 = 今日错词 + 收藏词；每个词各 1 句英译中、1 句中译英。
-        没有错词/收藏时练习为空；素材库仍可从练习页手动打开。
+        每日练习句数 = 今日错词 + 今日收藏；每个词各 1 句英译中、1 句中译英。
+        没有今日错词/收藏时练习为空；素材库仍可从练习页手动打开。
       </p>
     </div>
   </AppShell>
@@ -279,8 +279,8 @@ onMounted(async () => {
     .filter((row) => row.wrong && (row.lastWrongAt ?? 0) >= start)
     .sort((a, b) => (b.lastWrongAt ?? 0) - (a.lastWrongAt ?? 0))
   const favorites = rows
-    .filter((row) => row.favorite)
-    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .filter((row) => row.favorite && (row.favoritedAt ?? 0) >= start)
+    .sort((a, b) => (b.favoritedAt ?? 0) - (a.favoritedAt ?? 0))
 
   const needsDictionary = rows.some((row) => !wordById.has(row.wordId))
   const dictionary = needsDictionary

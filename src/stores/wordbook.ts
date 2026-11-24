@@ -51,6 +51,7 @@ export const useWordbookStore = defineStore('wordbook', () => {
   async function toggleFavorite(wordId: string, source: WordbookSource = 'manual') {
     const row = await ensure(wordId, source)
     row.favorite = !row.favorite
+    row.favoritedAt = row.favorite ? Date.now() : undefined
     await persist(row)
   }
 

@@ -34,6 +34,7 @@ export interface SettingRow {
 export interface WordbookRow {
   wordId: string
   favorite: boolean
+  favoritedAt?: number
   learned: boolean
   wrong?: boolean
   wrongCount?: number
