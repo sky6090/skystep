@@ -30,10 +30,10 @@ function applyTheme() {
     theme = mode
   }
   document.documentElement.dataset.theme = theme
-  document.documentElement.style.colorScheme = theme === 'night' ? 'dark' : 'light'
+  document.documentElement.style.colorScheme = 'light'
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', theme === 'night' ? '#0F1A22' : '#F6F4EF')
+    ?.setAttribute('content', theme === 'night' ? '#D5E7F4' : '#F2F8FC')
 }
 
 onMounted(async () => {

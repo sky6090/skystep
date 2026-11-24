@@ -104,7 +104,7 @@
           <span class="tag tag-accent">每日新词难度已匹配</span>
         </div>
         <button class="btn btn-primary btn-block" type="button" :disabled="saving" @click="finish">
-          {{ saving ? '正在安顿…' : '开始今天' }}
+          {{ saving ? '正在保存…' : retest ? '保存词汇量' : '开始今天' }}
         </button>
         <button class="btn btn-ghost btn-block" type="button" @click="restartPlacement">
           再测一次
@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import BrandMark from '@/components/BrandMark.vue'
 import PetAvatar from '@/components/PetAvatar.vue'
 import {
@@ -128,10 +128,12 @@ import {
 } from '@/data/placement'
 import { useSettingsStore, type PetSpecies } from '@/stores/settings'
 
+const route = useRoute()
 const router = useRouter()
 const settings = useSettingsStore()
+const retest = route.query.retest === '1'
 
-const step = ref(1)
+const step = ref(retest ? 3 : 1)
 const selected = ref<PetSpecies>('cat')
 const name = ref('')
 const saving = ref(false)
@@ -164,6 +166,14 @@ function restartPlacement() {
 async function finish() {
   if (saving.value) return
   saving.value = true
+  if (retest) {
+    await settings.setVocabPlacement(
+      placementResult.value?.level ?? 'intermediate',
+      placementResult.value?.estimated ?? 0,
+    )
+    await router.replace('/settings')
+    return
+  }
   await settings.completeOnboarding(
     selected.value,
     name.value,

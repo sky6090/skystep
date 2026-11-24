@@ -74,6 +74,21 @@
 
       <section class="card section">
         <div class="section-head">
+          <h2 class="h3">词汇量</h2>
+          <span class="muted small">{{ vocabLabel }}</span>
+        </div>
+        <p class="muted small">
+          {{
+            settings.profile.estimatedVocab
+              ? `估算约 ${settings.profile.estimatedVocab} 词；新词难度会按这个水平选择。`
+              : '还没有测过词汇量。测一次后会调整新词难度。'
+          }}
+        </p>
+        <RouterLink to="/onboarding?retest=1" class="btn btn-sm">重新测试</RouterLink>
+      </section>
+
+      <section class="card section">
+        <div class="section-head">
           <h2 class="h3">AI 批改（可选）</h2>
           <span class="muted small">{{ ai.hasKey ? '已保存 Key' : '未配置' }}</span>
         </div>
@@ -159,6 +174,7 @@ import AppShell from '@/components/AppShell.vue'
 import PetAvatar from '@/components/PetAvatar.vue'
 import { db } from '@/db/db'
 import { AIError } from '@/domain/ai'
+import { VOCAB_LEVEL_LABELS } from '@/data/vocabulary'
 import { collectBackup, downloadBackup, restoreBackup } from '@/services/backup'
 import { useAIStore } from '@/stores/ai'
 import { useSettingsStore, type LearnMode, type ThemeMode } from '@/stores/settings'
@@ -181,6 +197,11 @@ const backupReminder = computed(() => {
   const days = Math.floor((Date.now() - lastBackupAt.value) / 86_400_000)
   if (days >= 7) return `上次备份是 ${days} 天前，建议再导出一份。`
   return ''
+})
+
+const vocabLabel = computed(() => {
+  if (!settings.profile.estimatedVocab) return '未测试'
+  return `${VOCAB_LEVEL_LABELS[settings.profile.vocabLevel]} · ${settings.profile.estimatedVocab} 词`
 })
 
 onMounted(async () => {
