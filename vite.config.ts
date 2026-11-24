@@ -3,8 +3,15 @@ import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1]
+const pagesBase = repoName
+  ? repoName.endsWith('.github.io')
+    ? '/'
+    : `/${repoName}/`
+  : '/skystep/'
+
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/skystep/' : '/',
+  base: mode === 'production' ? pagesBase : '/',
   plugins: [
     vue(),
     VitePWA({

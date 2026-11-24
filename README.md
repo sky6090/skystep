@@ -28,7 +28,7 @@ M7 进行中，已可运行：
 - 返回按钮：学习、复习、练习、模考、写作、商店等深入页面左上角可返回上一级。
 - PWA 构建、GitHub Pages 404 回退。
 
-> M7 目前 3 套阅读题（90 题）、100 篇文章；词典 18,181 条 ECDICT（MIT），CET-4 + CET-6 并集 5,802 个；词形变化和 28 个核心词例句/近反义已接上，其余例句/短语仍待补。GitHub Pages 仓库和部署未做。听力不在 v1。
+> M7 目前 3 套阅读题（90 题）、100 篇文章；词典 18,181 条 ECDICT（MIT），CET-4 + CET-6 并集 5,802 个；词形变化和 28 个核心词例句/近反义已接上，其余例句/短语仍待补。GitHub Pages 部署步骤见 `RELEASE.md`。听力不在 v1。
 
 ## 技术栈
 
@@ -57,10 +57,20 @@ pnpm preview
 
 ## 部署到 GitHub Pages
 
-1. 创建仓库，例如 `skystep`。
-2. 把 `vite.config.ts` 里的 `base` 改成 `/<仓库名>/`（当前是 `/skystep/`）。
-3. 把 `dist` 发布到 GitHub Pages，或使用 GitHub Actions 构建后发布。
-4. 构建脚本会自动生成 `dist/404.html`，保证前端路由刷新不 404。
+完整步骤见 `RELEASE.md`。当前仓库包含 `.github/workflows/deploy.yml`：
+
+1. 创建 public 仓库。
+2. 在仓库 Settings → Deploy keys 添加 `.deploy/skystep_deploy.pub`，勾选 Allow write access。
+3. 在 Settings → Pages 把 Source 设为 GitHub Actions。
+4. 通过 SSH 443 推送 `main`：
+
+```bash
+GIT=".tools/git/cmd/git.exe"
+"$GIT" remote add origin ssh://git@ssh.github.com:443/<用户名>/<仓库名>.git
+"$GIT" push -u origin main
+```
+
+5. Actions 构建并部署；构建脚本会自动生成 `dist/404.html`，前端路由刷新不 404。
 
 ## 数据
 

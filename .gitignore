@@ -8,3 +8,4 @@ dist
 /data/
 .cache/
 .tools/
+.deploy/

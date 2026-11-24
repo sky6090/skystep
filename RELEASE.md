@@ -2,7 +2,7 @@
 
 SkyStep v1 发布前检查与 GitHub Pages 部署步骤。
 
-> 当前环境备注：系统 `git` / `gh` 未安装；已下载 portable MinGit 到 `.tools/git`，本地仓库已初始化并提交（`76991f9`）。但没有 remote 和 GitHub 授权，所以尚未推送；GitHub 网络现在可访问。
+> 当前环境备注：系统 `git` / `gh` 未安装；已下载 portable MinGit 到 `.tools/git`，本地仓库已初始化并提交。GitHub 网页/HTTPS git 在当前网络不稳定，但 **SSH 443** 可用；已生成部署密钥 `.deploy/skystep_deploy`（私钥被 `.gitignore` 忽略）。没有 remote 和 GitHub 授权，所以尚未推送。
 
 ## 1. 发布前检查
 
@@ -21,32 +21,35 @@ pnpm preview
 - [ ] `DATA_SOURCES.md` 的 ECDICT 18,181 词条来源与 MIT 归属已核对；CET-4 + CET-6 并集 5,802；其余例句/短语仍为空。
 - [ ] 文章 / 题目为原创或已确认授权。
 
-## 2. 创建 GitHub 仓库
+## 2. 创建 GitHub 仓库和部署密钥
 
-1. 在 GitHub 新建 public 仓库，例如 `skystep`。
-2. 如果仓库名不是 `skystep`，修改 `vite.config.ts` 的 `base` 和 `index.html` 里的路径。
-3. 本地初始化并推送：
+1. 在 GitHub 新建 **public** 仓库，例如 `skystep`（不要勾选 README / .gitignore / license）。
+2. 仓库 → Settings → **Deploy keys** → Add deploy key：
+   - Title：`SkyStep deploy`
+   - Key：本机 `.deploy/skystep_deploy.pub` 的内容
+   - 勾选 **Allow write access**
+3. 仓库 → Settings → Pages：
+   - Source 选择 **GitHub Actions**。
+4. 本机添加 remote 并推送（通过 SSH 443，绕过当前 HTTPS 网络问题）：
 
 ```bash
-git init -b main
-git add .
-git commit -m "SkyStep v1"
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
-git push -u origin main
+GIT=".tools/git/cmd/git.exe"
+"$GIT" remote add origin ssh://git@ssh.github.com:443/<你的用户名>/skystep.git
+"$GIT" push -u origin main
 ```
 
-## 3. 开启 GitHub Pages
+如果仓库名不是 `skystep`，把 URL 里的 `skystep` 换掉即可；`vite.config.ts` 在 GitHub Actions 里会自动按仓库名生成 base 路径。
 
-1. 仓库 → Settings → Pages。
-2. Source 选择 **GitHub Actions**。
-3. 推送 `main` 后，`.github/workflows/deploy.yml` 会自动构建并部署。
-4. 部署完成后地址通常是：
+## 3. 自动部署
+
+1. 推送 `main` 后，`.github/workflows/deploy.yml` 会自动构建并部署。
+2. 部署完成后地址通常是：
 
 ```text
 https://<你的用户名>.github.io/<仓库名>/
 ```
 
-当前 `base` 是 `/skystep/`，对应仓库名 `skystep`。
+3. 如果 Actions 失败，先看 Actions 日志里的 `pnpm install` / `pnpm build`；本地 `pnpm build` 已通过。当前 `base` 本地 fallback 是 `/skystep/`，GitHub Actions 会按真实仓库名覆盖。
 
 ## 4. 发布后验证
 
