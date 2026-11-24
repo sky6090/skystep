@@ -113,6 +113,13 @@
             >
               {{ option }}
             </button>
+            <button
+              class="placement-option unknown"
+              type="button"
+              @click="answerPlacement(-1)"
+            >
+              不认识
+            </button>
           </div>
         </div>
       </template>
@@ -353,6 +360,19 @@ async function finish() {
 .placement-option:hover {
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+
+.placement-option.unknown {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+  background: color-mix(in srgb, var(--danger) 6%, var(--surface));
+  color: color-mix(in srgb, var(--danger) 78%, var(--ink));
+  font-weight: 600;
+}
+
+.placement-option.unknown:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
 }
 
 .placement-result {

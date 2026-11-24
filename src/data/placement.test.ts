@@ -18,4 +18,10 @@ describe('vocabulary placement', () => {
     expect(result.level).toBe('advanced')
     expect(result.estimated).toBe(6000)
   })
+
+  it('treats an unknown answer as incorrect', () => {
+    const result = evaluatePlacement(placementQuestions.map(() => -1))
+    expect(result.score).toBe(0)
+    expect(result.level).toBe('basic')
+  })
 })
