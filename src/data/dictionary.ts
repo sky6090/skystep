@@ -49,6 +49,7 @@ export function entryToWord(entry: DictionaryEntry): WordEntry {
     exampleZh: entry.exZh,
     forms: entry.forms ?? [],
     tags: [entry.tag],
+    rank: entry.rank,
   }
 }
 

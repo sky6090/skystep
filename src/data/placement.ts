@@ -45,7 +45,21 @@ export function createPlacementQuestionsFromPool(
   pool: WordEntry[],
   count = 15,
 ): PlacementQuestion[] {
-  const picked = shuffled(pool).slice(0, count)
+  const ranked = [...pool].sort(
+    (a, b) => (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER),
+  )
+  const bandSize = Math.ceil(ranked.length / 3)
+  const bands = [
+    ranked.slice(0, bandSize),
+    ranked.slice(bandSize, bandSize * 2),
+    ranked.slice(bandSize * 2),
+  ]
+  const base = Math.floor(count / 3)
+  const picked: WordEntry[] = []
+  bands.forEach((band, index) => {
+    const take = base + (index === 2 ? count - base * 3 : 0)
+    picked.push(...shuffled(band).slice(0, take))
+  })
   return picked.map((word) => questionFromWord(word, pool))
 }
 

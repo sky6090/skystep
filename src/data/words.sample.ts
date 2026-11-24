@@ -8,6 +8,7 @@ export interface WordEntry {
   exampleZh: string
   forms?: string[]
   tags: string[]
+  rank?: number
 }
 
 export const sampleWords: WordEntry[] = [

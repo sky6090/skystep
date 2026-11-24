@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import type { WordEntry } from './words.sample'
 import {
   createPlacementQuestions,
+  createPlacementQuestionsFromPool,
   evaluatePlacement,
   placementQuestions,
 } from './placement'
@@ -14,6 +16,25 @@ describe('vocabulary placement', () => {
       expect(question.options).toHaveLength(4)
       expect(question.options[question.answer]).toBeTruthy()
     }
+  })
+
+  it('picks five easy, five medium, and five hard words in order', () => {
+    const pool: WordEntry[] = Array.from({ length: 30 }, (_, index) => ({
+      id: `w${index + 1}`,
+      word: `w${index + 1}`,
+      phonetic: '',
+      pos: 'n.',
+      meaning: `义${index + 1}`,
+      example: '',
+      exampleZh: '',
+      tags: ['CET-6'],
+      rank: index + 1,
+    }))
+    const questions = createPlacementQuestionsFromPool(pool, 15)
+    const ranks = questions.map((question) => Number(question.word.slice(1)))
+    expect(ranks.slice(0, 5).every((rank) => rank <= 10)).toBe(true)
+    expect(ranks.slice(5, 10).every((rank) => rank > 10 && rank <= 20)).toBe(true)
+    expect(ranks.slice(10).every((rank) => rank > 20)).toBe(true)
   })
 
   it('estimates a basic level for few correct answers', () => {
