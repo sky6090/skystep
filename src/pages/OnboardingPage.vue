@@ -1,6 +1,14 @@
 <template>
   <div class="onboarding">
     <header class="brand-row">
+      <button
+        v-if="step === 4"
+        class="exit-test"
+        type="button"
+        @click="exitPlacement"
+      >
+        ← 退出
+      </button>
       <BrandMark :size="34" />
       <span class="brand-name">SkyStep</span>
     </header>
@@ -85,10 +93,16 @@
     </div>
 
     <div v-else class="stage">
-      <template v-if="!placementResult">
+      <div v-if="placementLoading" class="placement-loading">
+        <p class="eyebrow">vocabulary check</p>
+        <h1 class="display">正在准备 15 个六级词…</h1>
+        <p class="lede">从 CET-4 + CET-6 的 5,802 个词里随机抽题。</p>
+      </div>
+
+      <template v-else-if="!placementResult">
         <p class="eyebrow">vocabulary check</p>
         <h1 class="display">先看看你的词汇量。</h1>
-        <p class="lede">12 道四选一，不用查词，凭第一反应。之后会按结果调整新词难度。</p>
+        <p class="lede">15 道四选一，不用查词，凭第一反应。之后会按结果调整新词难度。</p>
 
         <div class="placement-meta">
           <span>{{ placementIndex + 1 }} / {{ questions.length }}</span>
@@ -148,15 +162,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandMark from '@/components/BrandMark.vue'
 import PetAvatar from '@/components/PetAvatar.vue'
+import { entryToWord, loadDictionary } from '@/data/dictionary'
 import {
   createPlacementQuestions,
+  createPlacementQuestionsFromPool,
   evaluatePlacement,
   type PlacementResult,
 } from '@/data/placement'
+import type { WordEntry } from '@/data/words.sample'
 import { useSettingsStore, type PetSpecies } from '@/stores/settings'
 
 const route = useRoute()
@@ -170,9 +187,25 @@ const userName = ref('')
 const name = ref('')
 const saving = ref(false)
 const placementIndex = ref(0)
-const questions = ref(createPlacementQuestions())
+const placementLoading = ref(true)
+const placementPool = ref<WordEntry[]>([])
+const questions = ref<ReturnType<typeof createPlacementQuestionsFromPool>>([])
 const placementAnswers = ref<number[]>([])
 const placementResult = ref<PlacementResult | null>(null)
+
+onMounted(async () => {
+  try {
+    const entries = await loadDictionary()
+    placementPool.value = entries
+      .filter((entry) => entry.tag === 'CET-4' || entry.tag === 'CET-6')
+      .map(entryToWord)
+    questions.value = createPlacementQuestionsFromPool(placementPool.value, 15)
+  } catch {
+    questions.value = createPlacementQuestions(15)
+  } finally {
+    placementLoading.value = false
+  }
+})
 
 const speciesOptions: Array<{ id: PetSpecies; name: string; desc: string }> = [
   { id: 'cat', name: '猫', desc: '安静，喜欢趴在书边' },
@@ -194,10 +227,18 @@ function answerPlacement(choice: number) {
 }
 
 function restartPlacement() {
-  questions.value = createPlacementQuestions()
+  questions.value = createPlacementQuestionsFromPool(placementPool.value, 15)
   placementIndex.value = 0
   placementAnswers.value = []
   placementResult.value = null
+}
+
+function exitPlacement() {
+  if (retest) {
+    router.replace('/settings')
+    return
+  }
+  step.value = 3
 }
 
 async function finish() {
@@ -238,6 +279,28 @@ async function finish() {
   align-items: center;
   gap: 9px;
   margin-bottom: 40px;
+}
+
+.exit-test {
+  margin-right: 4px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.exit-test:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.placement-loading {
+  display: grid;
+  gap: 12px;
+  padding-top: 20px;
 }
 
 .brand-name {

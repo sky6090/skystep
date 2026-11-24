@@ -131,7 +131,7 @@
           </p>
 
           <p v-if="answered && lastCorrect" class="hint">
-            正确，1.06 秒后自动进入下一题。
+            2秒后进入下一词
           </p>
           <p v-else-if="answered" class="hint">
             做错了，点下方 Step 继续；这个阶段结束前会把错题重做，直到做对。
@@ -225,7 +225,7 @@ function scheduleAdvance() {
   advanceTimer = window.setTimeout(() => {
     advanceTimer = undefined
     advance()
-  }, 1061.5)
+  }, 2061.5)
 }
 
 async function load() {

@@ -6,10 +6,10 @@ import {
 } from './placement'
 
 describe('vocabulary placement', () => {
-  it('creates twelve fresh questions with four options each', () => {
-    const questions = createPlacementQuestions(12)
-    expect(questions).toHaveLength(12)
-    expect(new Set(questions.map((question) => question.word)).size).toBe(12)
+  it('creates fifteen fresh questions with four options each', () => {
+    const questions = createPlacementQuestions(15)
+    expect(questions).toHaveLength(15)
+    expect(new Set(questions.map((question) => question.word)).size).toBe(15)
     for (const question of questions) {
       expect(question.options).toHaveLength(4)
       expect(question.options[question.answer]).toBeTruthy()
@@ -28,9 +28,9 @@ describe('vocabulary placement', () => {
   it('estimates an advanced level for a high score', () => {
     const answers = placementQuestions.map((question) => question.answer)
     const result = evaluatePlacement(answers)
-    expect(result.score).toBe(12)
+    expect(result.score).toBe(15)
     expect(result.level).toBe('advanced')
-    expect(result.estimated).toBe(6000)
+    expect(result.estimated).toBe(6450)
   })
 
   it('treats an unknown answer as incorrect', () => {

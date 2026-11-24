@@ -41,9 +41,16 @@ function questionFromWord(word: WordEntry, pool: WordEntry[]): PlacementQuestion
   }
 }
 
-export function createPlacementQuestions(count = 12): PlacementQuestion[] {
-  const picked = shuffled(sampleWords).slice(0, count)
-  return picked.map((word) => questionFromWord(word, sampleWords))
+export function createPlacementQuestionsFromPool(
+  pool: WordEntry[],
+  count = 15,
+): PlacementQuestion[] {
+  const picked = shuffled(pool).slice(0, count)
+  return picked.map((word) => questionFromWord(word, pool))
+}
+
+export function createPlacementQuestions(count = 15): PlacementQuestion[] {
+  return createPlacementQuestionsFromPool(sampleWords, count)
 }
 
 // A stable default for tests and any code that does not need a fresh set.
@@ -57,8 +64,8 @@ export function evaluatePlacement(
     (sum, question, index) => sum + (answers[index] === question.answer ? 1 : 0),
     0,
   )
-  const estimated = Math.min(6500, 1200 + score * 400)
-  const level: VocabLevel = score <= 4 ? 'basic' : score <= 8 ? 'intermediate' : 'advanced'
+  const estimated = Math.min(6500, 1200 + score * 350)
+  const level: VocabLevel = score <= 5 ? 'basic' : score <= 10 ? 'intermediate' : 'advanced'
   const label =
     level === 'basic' ? '基础 · 先补高频' : level === 'advanced' ? '进阶 · 冲六级高分' : '中级 · 六级主力'
   return { score, estimated, level, label }
