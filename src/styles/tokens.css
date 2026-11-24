@@ -27,21 +27,21 @@
 }
 
 [data-theme="night"] {
-  color-scheme: dark;
-  --bg: #08131d;
-  --surface: #102230;
-  --surface-2: #173244;
-  --room: #0c1c29;
-  --ink: #eaf6ff;
-  --ink-2: #b8d0e0;
-  --muted: #87a6b9;
-  --line: #23465c;
-  --accent: #6fb7e8;
-  --accent-strong: #9cd4f5;
-  --accent-soft: #173b52;
-  --success: #8fc9a8;
-  --danger: #e58c86;
-  --paper: #eaf6fd;
+  color-scheme: light;
+  --bg: #e3eef7;
+  --surface: #f9fdff;
+  --surface-2: #d7e7f3;
+  --room: #dceaf5;
+  --ink: #17384d;
+  --ink-2: #3d5d71;
+  --muted: #648193;
+  --line: #c0d7e7;
+  --accent: #2e7fb5;
+  --accent-strong: #23638f;
+  --accent-soft: #cce4f4;
+  --success: #3f7a5a;
+  --danger: #b34e4a;
+  --paper: #e8f4fc;
   --paper-ink: #123247;
   --pet: #d9a15a;
 }
