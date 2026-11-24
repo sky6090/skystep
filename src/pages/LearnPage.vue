@@ -55,7 +55,9 @@
           </div>
 
           <template v-if="phaseIndex === 0">
-            <p class="eyebrow">英 → 中 · {{ wordIndex + 1 }} / {{ queue.length }}</p>
+            <p class="eyebrow">
+              {{ isRetry ? '错题重做 · ' : '' }}英 → 中 · {{ wordIndex + 1 }} / {{ activeQueue.length }}
+            </p>
             <h2 class="word-head">{{ current.word }}</h2>
             <p class="phonetic">{{ current.phonetic }}</p>
             <div class="option-list">
@@ -74,7 +76,9 @@
           </template>
 
           <template v-else-if="phaseIndex === 1">
-            <p class="eyebrow">中 → 英 · {{ wordIndex + 1 }} / {{ queue.length }}</p>
+            <p class="eyebrow">
+              {{ isRetry ? '错题重做 · ' : '' }}中 → 英 · {{ wordIndex + 1 }} / {{ activeQueue.length }}
+            </p>
             <h2 class="meaning-head">{{ current.meaning }}</h2>
             <div class="option-list">
               <button
@@ -92,7 +96,9 @@
           </template>
 
           <template v-else>
-            <p class="eyebrow">拼写 · {{ wordIndex + 1 }} / {{ queue.length }}</p>
+            <p class="eyebrow">
+              {{ isRetry ? '错题重做 · ' : '' }}拼写 · {{ wordIndex + 1 }} / {{ activeQueue.length }}
+            </p>
             <h2 class="meaning-head">{{ current.meaning }}</h2>
             <p class="phonetic">{{ current.phonetic }}</p>
             <div class="spell-row">
@@ -124,24 +130,24 @@
             <span class="sub-label">正确拼写</span> {{ current.word }}
           </p>
 
-          <p v-if="answered && phaseIndex === 0" class="hint">
-            记住这个意思，下一轮会从中文回忆英文。
+          <p v-if="answered && lastCorrect" class="hint">
+            正确，1.06 秒后自动进入下一题。
           </p>
-          <p v-else-if="answered && phaseIndex === 1" class="hint">
-            下一轮会考拼写。
+          <p v-else-if="answered" class="hint">
+            做错了，点下方 Step 继续；这个阶段结束前会把错题重做，直到做对。
           </p>
-          <p v-else-if="!answered" class="hint">
+          <p v-else class="hint">
             四选一，选最接近的一个；想直接跳过就点右上角 Step。
           </p>
 
           <button
-            v-if="answered"
+            v-if="answered && !lastCorrect"
             class="btn btn-primary btn-block"
             type="button"
             :disabled="busy"
             @click="advance"
           >
-            Step · 下一个
+            Step · 下一题
           </button>
         </article>
       </template>
@@ -150,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import { db } from '@/db/db'
 import { entryToWord, loadDictionary } from '@/data/dictionary'
@@ -168,18 +174,23 @@ const session = useSessionStore()
 const wordbook = useWordbookStore()
 
 const queue = ref<WordEntry[]>([])
+const activeQueue = ref<WordEntry[]>([])
 const phaseIndex = ref(0)
 const wordIndex = ref(0)
 const busy = ref(false)
 const finished = ref(false)
 const answered = ref(false)
+const lastCorrect = ref(false)
+const isRetry = ref(false)
 const selected = ref('')
 const spellingInput = ref('')
 const feedback = ref('')
 const feedbackTone = ref('')
 const rated = new Set<string>()
+const phaseWrong = new Set<string>()
+let advanceTimer: number | undefined
 
-const current = computed(() => queue.value[wordIndex.value])
+const current = computed(() => activeQueue.value[wordIndex.value])
 const quiz = computed(() => {
   if (!current.value || phaseIndex.value === 2) return null
   return buildQuizOptions(
@@ -199,6 +210,23 @@ onMounted(async () => {
   await wordbook.load()
   await load()
 })
+
+onBeforeUnmount(clearAdvanceTimer)
+
+function clearAdvanceTimer() {
+  if (advanceTimer !== undefined) {
+    window.clearTimeout(advanceTimer)
+    advanceTimer = undefined
+  }
+}
+
+function scheduleAdvance() {
+  clearAdvanceTimer()
+  advanceTimer = window.setTimeout(() => {
+    advanceTimer = undefined
+    advance()
+  }, 1061.5)
+}
 
 async function load() {
   await session.refresh()
@@ -229,13 +257,18 @@ async function load() {
 
   phaseIndex.value = 0
   wordIndex.value = 0
+  activeQueue.value = queue.value
+  phaseWrong.clear()
+  isRetry.value = false
   rated.clear()
   finished.value = queue.value.length === 0
   resetStep()
 }
 
 function resetStep() {
+  clearAdvanceTimer()
   answered.value = false
+  lastCorrect.value = false
   selected.value = ''
   spellingInput.value = ''
   feedback.value = ''
@@ -299,6 +332,9 @@ async function pickOption(option: string) {
   answered.value = true
   selected.value = option
   const correct = option === quiz.value.answer
+  lastCorrect.value = correct
+  if (correct) phaseWrong.delete(current.value.id)
+  else phaseWrong.add(current.value.id)
   feedback.value = correct ? '正确。' : `正确答案：${quiz.value.answer}`
   feedbackTone.value = correct ? 'ok' : 'wrong'
   try {
@@ -306,6 +342,7 @@ async function pickOption(option: string) {
   } finally {
     busy.value = false
   }
+  if (correct) scheduleAdvance()
 }
 
 async function checkSpelling() {
@@ -313,8 +350,12 @@ async function checkSpelling() {
   answered.value = true
   const correct =
     spellingInput.value.trim().toLowerCase() === current.value.word.toLowerCase()
+  lastCorrect.value = correct
+  if (correct) phaseWrong.delete(current.value.id)
+  else phaseWrong.add(current.value.id)
   feedback.value = correct ? '拼写正确。' : `正确拼写：${current.value.word}`
   feedbackTone.value = correct ? 'ok' : 'wrong'
+  if (correct) scheduleAdvance()
 }
 
 async function stepWord() {
@@ -324,6 +365,8 @@ async function stepWord() {
     if (phaseIndex.value === 0 && !answered.value) {
       await rateWord(true)
       answered.value = true
+      lastCorrect.value = true
+      phaseWrong.delete(current.value.id)
       feedback.value = '已标记认识，进入下一步。'
       feedbackTone.value = 'ok'
       busy.value = false
@@ -338,14 +381,28 @@ async function stepWord() {
 
 function advance() {
   if (finished.value) return
-  if (wordIndex.value + 1 < queue.value.length) {
+  clearAdvanceTimer()
+  if (wordIndex.value + 1 < activeQueue.value.length) {
     wordIndex.value += 1
     resetStep()
     return
   }
+
+  const wrongWords = activeQueue.value.filter((word) => phaseWrong.has(word.id))
+  if (wrongWords.length > 0) {
+    activeQueue.value = wrongWords
+    wordIndex.value = 0
+    isRetry.value = true
+    resetStep()
+    return
+  }
+
   if (phaseIndex.value < 2) {
     phaseIndex.value += 1
+    phaseWrong.clear()
+    activeQueue.value = queue.value
     wordIndex.value = 0
+    isRetry.value = false
     resetStep()
     return
   }
