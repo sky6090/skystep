@@ -22,11 +22,24 @@
         </button>
       </div>
 
+      <section v-if="!libraryMode && !dailyArticle" class="empty card">
+        <p class="empty-title">今天没有错词或收藏词，练习为空。</p>
+        <p class="muted small">
+          去学新词或复习，把不认识的词、想留住的词收进来；每多一个，今日练习就多一组中英句子。
+        </p>
+        <div class="empty-actions">
+          <RouterLink to="/learn" class="btn btn-primary">去学新词</RouterLink>
+          <RouterLink to="/review" class="btn btn-ghost">去复习</RouterLink>
+          <button class="btn btn-ghost" type="button" @click="showLibrary">去素材库</button>
+        </div>
+      </section>
+
+      <template v-else>
       <section class="targets">
         <div class="spread">
           <span class="sub-label">今天的目标词</span>
           <span class="caption">
-            {{ isDaily ? '今日错词短文' : `${sampleArticles.length} 篇素材` }}
+            {{ isDaily ? '今日错词 / 收藏练习' : `${sampleArticles.length} 篇素材` }}
           </span>
         </div>
         <div class="target-list">
@@ -40,9 +53,19 @@
             <p class="eyebrow">{{ article.theme }}</p>
             <h2 class="h2">{{ article.title }}</h2>
           </div>
-          <button class="btn btn-sm" type="button" @click="nextArticle">
-            {{ isDaily ? '换素材' : '换一篇' }}
-          </button>
+          <div class="article-actions">
+            <button
+              v-if="dailyArticle && !isDaily"
+              class="btn btn-sm"
+              type="button"
+              @click="returnToDaily"
+            >
+              今日练习
+            </button>
+            <button class="btn btn-sm" type="button" @click="nextArticle">
+              {{ isDaily ? '换素材' : '换一篇' }}
+            </button>
+          </div>
         </div>
 
         <label v-if="!isDaily" class="article-picker">
@@ -59,21 +82,17 @@
         </label>
 
         <p v-if="isDaily" class="daily-note">
-          今日错词重组：用了 {{ article.targetWords.length }} 个目标词（错词 + 收藏 + 今日新词）。
-          <template v-if="article.supplementedWords?.length">
-            其中 {{ article.supplementedWords.length }} 个为素材补充词。
-          </template>
+          今日错词 / 收藏：{{ article.targetWords.length }} 个词，英译中 {{ article.sentences.length }} 句 + 中译英 {{ article.sentences.length }} 句。
         </p>
 
         <p class="article-hint">
           {{
             isDaily
-              ? '这篇短文由今天的错词/收藏词重组而成。逐句译成中文，目标词的意思要出现。'
+              ? '每句后面括号里是这一句必须用上的词。先保证每句写完、目标词用上，再谈表达。'
               : mode === 'en-to-zh'
                 ? '把每句英文译成中文。'
                 : '把每句中文译成英文。'
           }}
-          先保证每句写完、目标词用上，再谈表达。
         </p>
 
         <div class="sentence-list">
@@ -102,6 +121,7 @@
           {{ submitting ? '正在批改…' : '提交批改' }}
         </button>
       </article>
+      </template>
 
       <section v-if="result" class="result">
         <div v-if="ai.config.enabled && ai.hasKey" class="ai-bar">
@@ -195,8 +215,8 @@
       </section>
 
       <p class="footnote">
-        英译中优先用今日错词重组；中译英用预制双语素材。
-        规则批改先查目标词覆盖、句子完整度、格式和长度。
+        每日练习句数 = 今日错词 + 收藏词；每个词各 1 句英译中、1 句中译英。
+        没有错词/收藏时练习为空；素材库仍可从练习页手动打开。
       </p>
     </div>
   </AppShell>
@@ -212,7 +232,7 @@ import {
   entryToWord,
   loadDictionary,
 } from '@/data/dictionary'
-import { sampleWords, wordById, type WordEntry } from '@/data/words.sample'
+import { wordById, type WordEntry } from '@/data/words.sample'
 import { buildDailyArticle } from '@/domain/dailyArticle'
 import { AIError, correctWithAI } from '@/domain/ai'
 import { startOfStudyDay, studyDayKey } from '@/domain/day'
@@ -221,8 +241,8 @@ import { useAIStore } from '@/stores/ai'
 import { useWordbookStore } from '@/stores/wordbook'
 
 const modes: Array<{ value: WritingMode; label: string }> = [
-  { value: 'en-to-zh', label: '每日翻译 · 英译中' },
-  { value: 'zh-to-en', label: '专项写作 · 中译英' },
+  { value: 'en-to-zh', label: '每日练习 · 英译中' },
+  { value: 'zh-to-en', label: '每日练习 · 中译英' },
 ]
 
 const wordbook = useWordbookStore()
@@ -231,6 +251,7 @@ const mode = ref<WritingMode>('en-to-zh')
 const libraryArticle = ref<WritingArticle>(sampleArticles[0])
 const dailyArticle = ref<WritingArticle | null>(null)
 const article = ref<WritingArticle>(sampleArticles[0])
+const libraryMode = ref(false)
 const inputs = ref<string[]>(article.value.sentences.map(() => ''))
 const result = ref<WritingResult | null>(null)
 const submitting = ref(false)
@@ -273,39 +294,16 @@ onMounted(async () => {
   }
 
   const seen = new Set<string>()
-  const cardsToday = await db.cards
-    .where('createdAt')
-    .aboveOrEqual(start)
-    .toArray()
-  const newWords = cardsToday
-    .map((row) => resolveWord(row.wordId))
-    .filter((word): word is WordEntry => Boolean(word))
   const base = [...wrong, ...favorites]
     .map((row) => resolveWord(row.wordId))
     .filter((word): word is WordEntry => Boolean(word))
-    .concat(newWords)
     .filter((word) => {
       if (seen.has(word.id)) return false
       seen.add(word.id)
       return true
     })
 
-  const supplemented: string[] = []
-  if (base.length > 0 && base.length < 5) {
-    for (const word of sampleWords) {
-      if (base.length >= 5) break
-      if (!seen.has(word.id)) {
-        seen.add(word.id)
-        base.push(word)
-        supplemented.push(word.id)
-      }
-    }
-  }
-
   const daily = base.length > 0 ? buildDailyArticle(base, studyDayKey()) : null
-  if (daily && supplemented.length) {
-    daily.supplementedWords = supplemented
-  }
   dailyArticle.value = daily
 
   const targets = new Set(rows.filter((row) => row.favorite || row.wrong).map((row) => row.wordId))
@@ -331,13 +329,25 @@ async function loadHistory() {
 function switchMode(next: WritingMode) {
   if (mode.value === next) return
   mode.value = next
-  article.value =
-    next === 'en-to-zh' && dailyArticle.value ? dailyArticle.value : libraryArticle.value
+  if (dailyArticle.value) {
+    libraryMode.value = false
+    article.value = dailyArticle.value
+  } else if (!libraryMode.value) {
+    article.value = libraryArticle.value
+  }
+  reset()
+}
+
+function showLibrary() {
+  libraryMode.value = true
+  mode.value = 'zh-to-en'
+  article.value = libraryArticle.value
   reset()
 }
 
 function nextArticle() {
   if (isDaily.value) {
+    libraryMode.value = true
     article.value = libraryArticle.value
     reset()
     return
@@ -346,6 +356,13 @@ function nextArticle() {
   const next = sampleArticles[(index + 1) % sampleArticles.length]
   libraryArticle.value = next
   article.value = next
+  reset()
+}
+
+function returnToDaily() {
+  if (!dailyArticle.value) return
+  libraryMode.value = false
+  article.value = dailyArticle.value
   reset()
 }
 
@@ -503,6 +520,12 @@ async function runAI() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.article-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
 }
 
 .article-hint {
@@ -766,6 +789,11 @@ async function runAI() {
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .footnote {

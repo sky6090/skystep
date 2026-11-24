@@ -2,18 +2,6 @@ import type { WritingArticle } from '@/data/articles.sample'
 import { sampleArticles } from '@/data/articles.sample'
 import type { WordEntry } from '@/data/words.sample'
 
-const INTRO = {
-  en: 'Today I went back to a few words that had slipped away.',
-  zh: '今天，我重新看了一些已经淡忘的词。',
-  targets: [] as string[],
-}
-
-const OUTRO = {
-  en: 'None of them is hard alone; the work is to keep them close.',
-  zh: '它们单独看都不难；难的是让它们一直留在身边。',
-  targets: [] as string[],
-}
-
 function pickSentence(word: WordEntry, offset: number) {
   const candidates = sampleArticles.flatMap((article) =>
     article.sentences.filter((sentence) => sentence.targets.includes(word.id)),
@@ -35,6 +23,11 @@ function pickSentence(word: WordEntry, offset: number) {
   }
 }
 
+function withWordHint(text: string, word: string, chinese: boolean) {
+  const trimmed = text.trim()
+  return chinese ? `${trimmed}（${word}）` : `${trimmed} (${word})`
+}
+
 export function buildDailyArticle(
   words: WordEntry[],
   dateKey: string,
@@ -45,25 +38,24 @@ export function buildDailyArticle(
   )
   if (unique.length < 1) return null
 
-  const selected = unique.slice(0, 8)
-  const sentences = selected.map((word, index) => {
+  const sentences = unique.map((word, index) => {
     const sentence = pickSentence(word, index + dateKey.length)
     return {
-      en: sentence.en,
-      zh: sentence.zh,
+      en: withWordHint(sentence.en || word.example, word.word, false),
+      zh: withWordHint(sentence.zh || word.exampleZh, word.word, true),
       targets: [word.id],
     }
   })
 
   return {
-    id: `daily-${dateKey}-${selected.map((word) => word.id).join('-')}`,
-    title: '今日错词短文',
-    theme: '错词重组',
-    targetWords: selected.map((word) => word.id),
+    id: `daily-${dateKey}-${unique.map((word) => word.id).join('-')}`,
+    title: '今日错词 / 收藏练习',
+    theme: '错词与收藏',
+    targetWords: unique.map((word) => word.id),
     targetMeanings: Object.fromEntries(
-      selected.map((word) => [word.id, word.meaning]),
+      unique.map((word) => [word.id, word.meaning]),
     ),
     generated: true,
-    sentences: [INTRO, ...sentences, OUTRO],
+    sentences,
   }
 }

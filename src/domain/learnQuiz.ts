@@ -7,6 +7,51 @@ export interface QuizOptions {
   answer: string
 }
 
+const POS_LABELS: Record<string, string> = {
+  a: 'adj.',
+  adj: 'adj.',
+  adv: 'adv.',
+  n: 'n.',
+  v: 'v.',
+  vt: 'v.',
+  vi: 'v.',
+  vbl: 'v.',
+  int: 'interj.',
+  interj: 'interj.',
+  pl: 'n.',
+  prep: 'prep.',
+  pron: 'pron.',
+  conj: 'conj.',
+  num: 'num.',
+  art: 'art.',
+  aux: 'aux.',
+  abbr: 'abbr.',
+}
+
+function normalizePos(pos: string): string {
+  return pos
+    .split(/[/,;，；]/)
+    .map((part) => part.trim().replace(/\.$/, '').toLowerCase())
+    .filter(Boolean)
+    .map((part) => POS_LABELS[part] ?? `${part}.`)
+    .filter((part, index, all) => all.indexOf(part) === index)
+    .join('/')
+}
+
+function highFrequencyMeaning(meaning: string): string {
+  const parts = meaning
+    .split(/[；;，,]/)
+    .map((part) => part.replace(/\[[^\]]*]/g, '').trim())
+    .filter(Boolean)
+  return [...new Set(parts)].slice(0, 2).join('；')
+}
+
+export function formatMeaningOption(word: WordEntry): string {
+  const pos = normalizePos(word.pos)
+  const meaning = highFrequencyMeaning(word.meaning) || word.meaning
+  return pos ? `${pos} ${meaning}` : meaning
+}
+
 function hash(seed: string): number {
   let value = 2166136261
   for (const char of seed) {
@@ -32,14 +77,15 @@ export function buildQuizOptions(
   phase: QuizPhase,
   pool: WordEntry[],
 ): QuizOptions {
-  const answer = phase === 0 ? current.meaning : current.word
-  const field = phase === 0 ? 'meaning' : 'word'
+  const valueOf = (word: WordEntry) =>
+    phase === 0 ? formatMeaningOption(word) : word.word
+  const answer = valueOf(current)
   const seen = new Set([answer.toLowerCase()])
   const distractors: string[] = []
 
   for (const word of shuffled(pool, `${current.id}-${phase}`)) {
     if (word.id === current.id) continue
-    const value = word[field]
+    const value = valueOf(word)
     if (seen.has(value.toLowerCase())) continue
     seen.add(value.toLowerCase())
     distractors.push(value)

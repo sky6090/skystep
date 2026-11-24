@@ -32,7 +32,7 @@
       </section>
 
       <div class="today-line">
-        <span>今天 {{ session.reviewedToday }} 张复习 · {{ session.learnedToday }} 个新词 · {{ session.wroteToday }} 篇写作</span>
+        <span>今天 {{ session.reviewedToday }} 张复习 · {{ session.learnedToday }} 个新词 · {{ session.wroteToday }} 次练习</span>
         <span v-if="newRemaining > 0" class="muted">还差 {{ newRemaining }} 个新词</span>
         <span v-else class="muted">新词已完成</span>
       </div>
@@ -108,8 +108,8 @@ const steps = computed<
 >(() => [
   {
     key: 'writing',
-    label: '写作',
-    hint: session.wroteToday > 0 ? '已完成' : '写 1 篇',
+    label: '练习',
+    hint: session.wroteToday > 0 ? '已完成' : '写 1 组',
     done: session.wroteToday > 0,
   },
   {
@@ -129,7 +129,7 @@ const steps = computed<
 const continueLabel = computed(() => {
   if (session.dueCount > 0) return '继续复习'
   if (newRemaining.value > 0) return '学新词'
-  if (session.wroteToday === 0) return '去写作'
+  if (session.wroteToday === 0) return '去练习'
   return '去单词本'
 })
 

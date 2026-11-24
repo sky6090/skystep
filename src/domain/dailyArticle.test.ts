@@ -4,13 +4,15 @@ import { evaluateWriting } from '@/domain/writing'
 import { buildDailyArticle } from './dailyArticle'
 
 describe('daily wrong-word article', () => {
-  it('builds a passage from selected words', () => {
+  it('builds one sentence per word with a word hint', () => {
     const article = buildDailyArticle(sampleWords.slice(0, 6), '2026-11-24')
     expect(article).not.toBeNull()
     expect(article?.targetWords).toHaveLength(6)
-    expect(article?.sentences).toHaveLength(8)
+    expect(article?.sentences).toHaveLength(6)
     expect(article?.generated).toBe(true)
     expect(article?.targetMeanings?.advocate).toContain('提倡')
+    expect(article?.sentences[0].en).toContain('(advocate)')
+    expect(article?.sentences[0].zh).toContain('（advocate）')
   })
 
   it('scores the reference Chinese translation', () => {
