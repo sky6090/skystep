@@ -41,15 +41,29 @@ function normalizePos(pos: string): string {
 function highFrequencyMeaning(meaning: string): string {
   const parts = meaning
     .split(/[；;，,]/)
-    .map((part) => part.replace(/\[[^\]]*]/g, '').trim())
+    .map((part) =>
+      part
+        .replace(/\[[^\]]*]/g, '')
+        .replace(/^[a-z]{1,5}\.\s*/i, '')
+        .trim(),
+    )
     .filter(Boolean)
   return [...new Set(parts)].slice(0, 2).join('；')
 }
 
+function positionsInMeaning(meaning: string): string[] {
+  const found = [...meaning.matchAll(/(?:^|[；;，,]\s*)([a-z]{1,5})\.\s*/gi)]
+  return found.flatMap((match) => normalizePos(match[1]).split('/')).filter(Boolean)
+}
+
 export function formatMeaningOption(word: WordEntry): string {
-  const pos = normalizePos(word.pos)
+  const positions = [
+    ...normalizePos(word.pos).split('/'),
+    ...positionsInMeaning(word.meaning),
+  ].filter(Boolean)
+  const label = [...new Set(positions)].join('/')
   const meaning = highFrequencyMeaning(word.meaning) || word.meaning
-  return pos ? `${pos} ${meaning}` : meaning
+  return label ? `${label} ${meaning}` : meaning
 }
 
 function hash(seed: string): number {
