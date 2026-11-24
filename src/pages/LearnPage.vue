@@ -318,7 +318,8 @@ async function rateWord(known: boolean) {
     })
 
     await wordbook.ensure(word.id, 'manual')
-    if (!known) await wordbook.markWrong(word.id, 'manual')
+    if (known) await wordbook.markLearned(word.id, 'manual')
+    else await wordbook.markWrong(word.id, 'manual')
     await session.refresh()
   } catch {
     rated.delete(word.id)
@@ -338,7 +339,11 @@ async function pickOption(option: string) {
   feedback.value = correct ? '正确。' : `正确答案：${quiz.value.answer}`
   feedbackTone.value = correct ? 'ok' : 'wrong'
   try {
-    if (phaseIndex.value === 0) await rateWord(correct)
+    if (phaseIndex.value === 0) {
+      await rateWord(correct)
+    } else if (!correct) {
+      await wordbook.markWrong(current.value.id, 'manual')
+    }
   } finally {
     busy.value = false
   }
@@ -355,6 +360,7 @@ async function checkSpelling() {
   else phaseWrong.add(current.value.id)
   feedback.value = correct ? '拼写正确。' : `正确拼写：${current.value.word}`
   feedbackTone.value = correct ? 'ok' : 'wrong'
+  if (!correct) await wordbook.markWrong(current.value.id, 'manual')
   if (correct) scheduleAdvance()
 }
 

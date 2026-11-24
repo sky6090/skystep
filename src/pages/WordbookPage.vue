@@ -62,6 +62,7 @@
                 {{ item.row.favorite ? '★' : '☆' }}
               </button>
               <button
+                v-if="!item.row.wrong"
                 class="icon-btn small"
                 type="button"
                 :aria-label="item.row.learned ? '取消已学会' : '标记已学会'"
@@ -147,14 +148,23 @@ const counts = computed<Record<TabKey, number>>(() => ({
   custom: wordbook.rows.filter((row) => row.source === 'custom').length,
 }))
 
-const items = computed(() =>
-  wordbook.rows
+const items = computed(() => {
+  const list = wordbook.rows
     .filter((row) => matchesTab(row))
     .filter((row) => matchesFilter(row))
     .filter((row) => matchesQuery(row))
     .map((row) => ({ row, word: wordFor(row) }))
-    .filter((item): item is { row: WordbookRow; word: WordEntry } => item.word !== null),
-)
+    .filter((item): item is { row: WordbookRow; word: WordEntry } => item.word !== null)
+
+  if (tab.value === 'wrong') {
+    list.sort(
+      (a, b) =>
+        (b.row.wrongCount ?? 0) - (a.row.wrongCount ?? 0) ||
+        (b.row.lastWrongAt ?? 0) - (a.row.lastWrongAt ?? 0),
+    )
+  }
+  return list
+})
 
 const emptyText = computed(() => {
   if (query.value.trim() || filter.value !== 'all') {
