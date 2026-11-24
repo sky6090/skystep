@@ -6,20 +6,18 @@
           <p class="eyebrow">today's new words</p>
           <h1 class="h1">学新词</h1>
         </div>
-        <span class="count">{{ index }} / {{ queue.length }}</span>
+        <span class="count">{{ phaseIndex + 1 }} / 3 遍</span>
       </header>
 
-      <div class="mode-tabs" role="tablist" aria-label="学新词方式">
-        <button
-          v-for="item in modes"
-          :key="item.value"
-          class="mode-tab"
-          :class="{ active: mode === item.value }"
-          type="button"
-          @click="setMode(item.value)"
+      <div class="phase-row" aria-label="学习阶段">
+        <span
+          v-for="(phase, index) in phases"
+          :key="phase"
+          class="phase-chip"
+          :class="{ active: index === phaseIndex, done: index < phaseIndex }"
         >
-          {{ item.label }}
-        </button>
+          {{ index + 1 }}. {{ phase }}
+        </span>
       </div>
 
       <div class="progress" aria-hidden="true">
@@ -28,9 +26,9 @@
 
       <section v-if="finished" class="done card">
         <p class="eyebrow">done</p>
-        <h2 class="h2">今天的新词学完了。</h2>
+        <h2 class="h2">今天的三遍学完了。</h2>
         <p class="muted small">
-          认识的词会在 3 天后再出现；不认识的词今天晚些时候再练一次。
+          英译中、中译英、拼写各过了一遍；学过的词已经进入 FSRS 复习。
         </p>
         <div class="done-actions">
           <RouterLink to="/review" class="btn btn-primary">去复习</RouterLink>
@@ -51,30 +49,50 @@
             >
               {{ wordbook.isFavorite(current.id) ? '★' : '☆' }}
             </button>
+            <button class="btn btn-sm step-btn" type="button" :disabled="busy" @click="stepWord">
+              Step
+            </button>
           </div>
 
-          <template v-if="mode === 'en-to-zh'">
+          <template v-if="phaseIndex === 0">
+            <p class="eyebrow">英 → 中 · {{ wordIndex + 1 }} / {{ queue.length }}</p>
             <h2 class="word-head">{{ current.word }}</h2>
             <p class="phonetic">{{ current.phonetic }}</p>
-            <div v-if="revealed" class="meaning">
-              <span class="pos">{{ current.pos }}</span>
-              <span>{{ current.meaning }}</span>
+            <div class="option-list">
+              <button
+                v-for="option in quiz?.options"
+                :key="option"
+                class="option-btn"
+                :class="optionClass(option)"
+                type="button"
+                :disabled="answered"
+                @click="pickOption(option)"
+              >
+                {{ option }}
+              </button>
             </div>
-            <div v-else class="prompt-box">先想中文意思，再显示答案。</div>
           </template>
 
-          <template v-else-if="mode === 'zh-to-en'">
-            <p class="eyebrow">中文 → 英文</p>
+          <template v-else-if="phaseIndex === 1">
+            <p class="eyebrow">中 → 英 · {{ wordIndex + 1 }} / {{ queue.length }}</p>
             <h2 class="meaning-head">{{ current.meaning }}</h2>
-            <div v-if="revealed" class="meaning">
-              <span class="word-reveal">{{ current.word }}</span>
-              <span class="phonetic">{{ current.phonetic }}</span>
+            <div class="option-list">
+              <button
+                v-for="option in quiz?.options"
+                :key="option"
+                class="option-btn"
+                :class="optionClass(option)"
+                type="button"
+                :disabled="answered"
+                @click="pickOption(option)"
+              >
+                {{ option }}
+              </button>
             </div>
-            <div v-else class="prompt-box">先回忆英文，再显示答案。</div>
           </template>
 
           <template v-else>
-            <p class="eyebrow">拼写</p>
+            <p class="eyebrow">拼写 · {{ wordIndex + 1 }} / {{ queue.length }}</p>
             <h2 class="meaning-head">{{ current.meaning }}</h2>
             <p class="phonetic">{{ current.phonetic }}</p>
             <div class="spell-row">
@@ -86,83 +104,46 @@
                 autocapitalize="off"
                 spellcheck="false"
                 placeholder="拼出这个单词"
-                :disabled="spellingResult !== null"
+                :disabled="answered"
                 @keyup.enter="checkSpelling"
               />
               <button
                 class="btn btn-primary"
                 type="button"
-                :disabled="!spellingInput.trim() || spellingResult !== null"
+                :disabled="!spellingInput.trim() || answered"
                 @click="checkSpelling"
               >
                 检查
               </button>
             </div>
-            <p
-              v-if="spellingResult === 'correct'"
-              class="spell-feedback correct"
-            >
-              拼写正确。
-            </p>
-            <p v-else-if="spellingResult === 'wrong'" class="spell-feedback wrong">
-              正确拼写是 <strong>{{ current.word }}</strong>。
-            </p>
           </template>
 
-          <p v-if="revealed && current.forms?.length" class="forms-line">
-            <span class="sub-label">词形</span> {{ current.forms.join(' · ') }}
+          <p v-if="feedback" class="feedback" :class="feedbackTone">{{ feedback }}</p>
+
+          <p v-if="answered && phaseIndex === 2" class="reveal-word">
+            <span class="sub-label">正确拼写</span> {{ current.word }}
           </p>
 
-          <p v-if="revealed && relationsFor(current.id)" class="relations-line">
-            <span class="sub-label">近义</span>
-            {{ relationsFor(current.id)?.syn.join(' · ') }}
-            <span class="relation-sep">/</span>
-            <span class="sub-label">反义</span>
-            {{ relationsFor(current.id)?.ant.join(' · ') }}
+          <p v-if="answered && phaseIndex === 0" class="hint">
+            记住这个意思，下一轮会从中文回忆英文。
+          </p>
+          <p v-else-if="answered && phaseIndex === 1" class="hint">
+            下一轮会考拼写。
+          </p>
+          <p v-else-if="!answered" class="hint">
+            四选一，选最接近的一个；想直接跳过就点右上角 Step。
           </p>
 
-          <div v-if="revealed && current.example" class="paper-panel example-panel">
-            <p class="example">{{ current.example }}</p>
-            <p class="example-zh">{{ current.exampleZh }}</p>
-          </div>
-        </article>
-
-        <p class="hint">
-          {{
-            mode === 'spelling'
-              ? '先拼，再自评；拼错也算一次“不认识”。'
-              : '先回忆，再显示答案；认识 = 3 天后再见，不认识 = 今天再练一次。'
-          }}
-        </p>
-
-        <button
-          v-if="!canRate"
-          class="btn btn-primary btn-block"
-          type="button"
-          :disabled="busy"
-          @click="revealOrCheck"
-        >
-          {{ revealLabel }}
-        </button>
-
-        <div v-else class="answer-row">
           <button
-            class="btn btn-ghost answer-unknown"
+            v-if="answered"
+            class="btn btn-primary btn-block"
             type="button"
             :disabled="busy"
-            @click="answer(false)"
+            @click="advance"
           >
-            不认识
+            Step · 下一个
           </button>
-          <button
-            class="btn btn-primary answer-known"
-            type="button"
-            :disabled="busy || (mode === 'spelling' && spellingResult === 'wrong')"
-            @click="answer(true)"
-          >
-            认识
-          </button>
-        </div>
+        </article>
       </template>
     </div>
   </AppShell>
@@ -173,46 +154,45 @@ import { computed, onMounted, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import { db } from '@/db/db'
 import { entryToWord, loadDictionary } from '@/data/dictionary'
-import { relationsFor } from '@/data/relations'
+import { buildQuizOptions } from '@/domain/learnQuiz'
 import { sampleWords, type WordEntry } from '@/data/words.sample'
 import { applyRating, createNewCard, Rating } from '@/domain/fsrs'
 import { useSessionStore } from '@/stores/session'
-import { useSettingsStore, type LearnMode } from '@/stores/settings'
+import { useSettingsStore } from '@/stores/settings'
 import { useWordbookStore } from '@/stores/wordbook'
+
+const phases = ['英 → 中', '中 → 英', '拼写'] as const
 
 const settings = useSettingsStore()
 const session = useSessionStore()
 const wordbook = useWordbookStore()
 
-const modes: Array<{ value: LearnMode; label: string }> = [
-  { value: 'en-to-zh', label: '英 → 中' },
-  { value: 'zh-to-en', label: '中 → 英' },
-  { value: 'spelling', label: '拼写' },
-]
-
 const queue = ref<WordEntry[]>([])
-const index = ref(0)
+const phaseIndex = ref(0)
+const wordIndex = ref(0)
 const busy = ref(false)
 const finished = ref(false)
-const revealed = ref(false)
+const answered = ref(false)
+const selected = ref('')
 const spellingInput = ref('')
-const spellingResult = ref<'correct' | 'wrong' | null>(null)
+const feedback = ref('')
+const feedbackTone = ref('')
+const rated = new Set<string>()
 
-const current = computed(() => queue.value[index.value])
-const mode = computed<LearnMode>(() => settings.profile.learnMode ?? 'en-to-zh')
-const progressWidth = computed(() =>
-  queue.value.length === 0 ? '0%' : `${Math.min(100, (index.value / queue.value.length) * 100)}%`,
-)
-const canRate = computed(() =>
-  mode.value === 'spelling' ? spellingResult.value !== null : revealed.value,
-)
-const revealLabel = computed(() =>
-  mode.value === 'spelling'
-    ? '检查拼写'
-    : mode.value === 'zh-to-en'
-      ? '显示英文'
-      : '显示意思',
-)
+const current = computed(() => queue.value[wordIndex.value])
+const quiz = computed(() => {
+  if (!current.value || phaseIndex.value === 2) return null
+  return buildQuizOptions(
+    current.value,
+    phaseIndex.value === 0 ? 0 : 1,
+    [...queue.value, ...sampleWords],
+  )
+})
+const progressWidth = computed(() => {
+  const total = Math.max(1, queue.value.length * 3)
+  const done = phaseIndex.value * queue.value.length + wordIndex.value
+  return `${Math.min(100, (done / total) * 100)}%`
+})
 
 onMounted(async () => {
   await settings.load()
@@ -231,7 +211,12 @@ async function load() {
   if (seed.length < limit) {
     const entries = await loadDictionary()
     const seen = new Set(seed.map((word) => word.id))
-    const examWords = entries.filter((entry) => entry.tag !== '高频')
+    const level = settings.profile.vocabLevel
+    const examWords = entries.filter((entry) => {
+      if (level === 'basic') return entry.tag === 'CET-4' || entry.tag === '高频'
+      if (level === 'advanced') return entry.tag === 'CET-6' || entry.tag === '考研'
+      return entry.tag === 'CET-6' || entry.tag === 'CET-4'
+    })
     const commonWords = entries.filter((entry) => entry.tag === '高频')
     const extras = [...examWords, ...commonWords]
       .filter((entry) => !existing.has(entry.id) && !seen.has(entry.id))
@@ -242,48 +227,39 @@ async function load() {
     queue.value = seed
   }
 
+  phaseIndex.value = 0
+  wordIndex.value = 0
+  rated.clear()
   finished.value = queue.value.length === 0
-  resetCard()
+  resetStep()
 }
 
-function setMode(value: LearnMode) {
-  if (mode.value === value) return
-  settings.setLearnMode(value)
-  resetCard()
-}
-
-function resetCard() {
-  revealed.value = false
+function resetStep() {
+  answered.value = false
+  selected.value = ''
   spellingInput.value = ''
-  spellingResult.value = null
+  feedback.value = ''
+  feedbackTone.value = ''
 }
 
-function revealOrCheck() {
-  if (mode.value === 'spelling') checkSpelling()
-  else revealed.value = true
+function optionClass(option: string) {
+  if (!answered.value) return {}
+  return {
+    correct: option === quiz.value?.answer,
+    wrong: option === selected.value && option !== quiz.value?.answer,
+  }
 }
 
-function checkSpelling() {
-  if (!current.value || !spellingInput.value.trim()) return
-  const correct =
-    spellingInput.value.trim().toLowerCase() === current.value.word.toLowerCase()
-  spellingResult.value = correct ? 'correct' : 'wrong'
-  revealed.value = true
-}
-
-async function answer(known: boolean) {
-  if (busy.value || !current.value) return
-  busy.value = true
+async function rateWord(known: boolean) {
+  if (!current.value || rated.has(current.value.id)) return
+  rated.add(current.value.id)
   const word = current.value
   const now = Date.now()
-  const spelledWrong = mode.value === 'spelling' && spellingResult.value === 'wrong'
-  const effectiveKnown = spelledWrong ? false : known
-  const rating = effectiveKnown ? Rating.Good : Rating.Again
-
+  const rating = known ? Rating.Good : Rating.Again
   try {
     const card = await createNewCard(new Date(now))
     const result = await applyRating(card, rating, new Date(now))
-    const dueAt = effectiveKnown ? result.card.dueAt.getTime() : now
+    const dueAt = known ? result.card.dueAt.getTime() : now
 
     await db.cards.put({
       wordId: word.id,
@@ -292,7 +268,7 @@ async function answer(known: boolean) {
       card: result.card,
       createdAt: now,
       updatedAt: now,
-      sameDay: !effectiveKnown,
+      sameDay: !known,
       origin: 'learn',
     })
 
@@ -309,15 +285,71 @@ async function answer(known: boolean) {
     })
 
     await wordbook.ensure(word.id, 'manual')
-    if (!effectiveKnown) await wordbook.markWrong(word.id, 'manual')
-
+    if (!known) await wordbook.markWrong(word.id, 'manual')
     await session.refresh()
-    index.value += 1
-    resetCard()
-    if (index.value >= queue.value.length) finished.value = true
+  } catch {
+    rated.delete(word.id)
+    throw new Error('save failed')
+  }
+}
+
+async function pickOption(option: string) {
+  if (answered.value || !current.value || !quiz.value) return
+  busy.value = true
+  answered.value = true
+  selected.value = option
+  const correct = option === quiz.value.answer
+  feedback.value = correct ? '正确。' : `正确答案：${quiz.value.answer}`
+  feedbackTone.value = correct ? 'ok' : 'wrong'
+  try {
+    if (phaseIndex.value === 0) await rateWord(correct)
   } finally {
     busy.value = false
   }
+}
+
+async function checkSpelling() {
+  if (answered.value || !current.value || !spellingInput.value.trim()) return
+  answered.value = true
+  const correct =
+    spellingInput.value.trim().toLowerCase() === current.value.word.toLowerCase()
+  feedback.value = correct ? '拼写正确。' : `正确拼写：${current.value.word}`
+  feedbackTone.value = correct ? 'ok' : 'wrong'
+}
+
+async function stepWord() {
+  if (busy.value || !current.value) return
+  busy.value = true
+  try {
+    if (phaseIndex.value === 0 && !answered.value) {
+      await rateWord(true)
+      answered.value = true
+      feedback.value = '已标记认识，进入下一步。'
+      feedbackTone.value = 'ok'
+      busy.value = false
+      advance()
+      return
+    }
+  } finally {
+    busy.value = false
+  }
+  advance()
+}
+
+function advance() {
+  if (finished.value) return
+  if (wordIndex.value + 1 < queue.value.length) {
+    wordIndex.value += 1
+    resetStep()
+    return
+  }
+  if (phaseIndex.value < 2) {
+    phaseIndex.value += 1
+    wordIndex.value = 0
+    resetStep()
+    return
+  }
+  finished.value = true
 }
 
 async function toggleFavorite() {
@@ -339,31 +371,32 @@ async function toggleFavorite() {
   font-variant-numeric: tabular-nums;
 }
 
-.mode-tabs {
+.phase-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   margin-top: -4px;
-  padding: 3px;
+}
+
+.phase-chip {
+  padding: 7px 4px;
   border: 1px solid var(--line);
-  border-radius: 11px;
-  background: var(--surface-2);
-}
-
-.mode-tab {
-  min-height: 36px;
-  border: 0;
   border-radius: 8px;
-  background: transparent;
+  background: var(--surface);
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
+  font-size: 10px;
+  text-align: center;
 }
 
-.mode-tab.active {
-  background: var(--surface);
-  color: var(--ink);
+.phase-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.phase-chip.done {
+  color: var(--success);
 }
 
 .done {
@@ -391,12 +424,17 @@ async function toggleFavorite() {
 }
 
 .word-meta .icon-btn {
+  margin-left: 0;
+}
+
+.step-btn {
   margin-left: auto;
+  font-weight: 700;
 }
 
 .word-head {
   font-family: var(--font-word);
-  font-size: 40px;
+  font-size: 42px;
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.03em;
@@ -415,35 +453,44 @@ async function toggleFavorite() {
   font-size: 13px;
 }
 
-.meaning {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding-top: 2px;
-  font-size: 17px;
-  line-height: 1.5;
+.option-list {
+  display: grid;
+  gap: 7px;
+  padding-top: 4px;
 }
 
-.pos {
-  flex: none;
-  color: var(--accent-strong);
-  font-size: 13px;
-}
-
-.word-reveal {
-  font-family: var(--font-word);
-  font-size: 32px;
-  line-height: 1.1;
-}
-
-.prompt-box {
-  padding: 18px 14px;
-  border: 1px dashed var(--line);
+.option-btn {
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--surface-2);
-  color: var(--muted);
+  background: var(--surface);
+  color: var(--ink);
   font-size: 13px;
-  text-align: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.option-btn:disabled {
+  cursor: default;
+}
+
+.option-btn.correct {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+  font-weight: 600;
+}
+
+.option-btn.wrong {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
 }
 
 .spell-row {
@@ -456,79 +503,40 @@ async function toggleFavorite() {
   min-width: 0;
 }
 
-.spell-feedback {
+.feedback {
   padding: 7px 10px;
+  border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 12px;
   line-height: 1.5;
 }
 
-.spell-feedback.correct {
-  border: 1px solid var(--success);
+.feedback.ok {
+  border-color: var(--success);
   color: var(--success);
 }
 
-.spell-feedback.wrong {
-  border: 1px solid var(--danger);
+.feedback.wrong {
+  border-color: var(--danger);
   color: var(--danger);
 }
 
-.example-panel {
-  display: grid;
-  gap: 4px;
+.reveal-word {
+  font-family: var(--font-word);
+  font-size: 30px;
+  line-height: 1.1;
 }
 
-.example {
-  font-family: var(--font-serif);
-  font-size: 14px;
-  line-height: 1.55;
-}
-
-.example-zh {
+.reveal-word .sub-label {
+  margin-right: 4px;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 11px;
 }
 
 .hint {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.6;
-}
-
-.forms-line {
-  color: var(--ink-2);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.forms-line .sub-label {
-  margin-right: 4px;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.relations-line {
-  color: var(--ink-2);
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.relations-line .sub-label {
-  margin-right: 3px;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.relation-sep {
-  margin: 0 4px;
-  color: var(--line);
-}
-
-.answer-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
 }
 
 @media (max-width: 380px) {
@@ -538,6 +546,10 @@ async function toggleFavorite() {
 
   .meaning-head {
     font-size: 21px;
+  }
+
+  .phase-chip {
+    font-size: 9px;
   }
 }
 </style>

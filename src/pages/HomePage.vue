@@ -16,6 +16,21 @@
         @select="go"
       />
 
+      <section class="card vocab-progress">
+        <div class="spread">
+          <div>
+            <span class="sub-label">六级词汇进度</span>
+            <p class="vocab-level">
+              {{ vocabLevelLabel }}<template v-if="settings.profile.estimatedVocab"> · 估算 {{ settings.profile.estimatedVocab }} 词</template>
+            </p>
+          </div>
+          <span class="vocab-count">{{ vocabDone }} / {{ CET6_TOTAL }}</span>
+        </div>
+        <div class="progress" aria-hidden="true">
+          <span :style="{ width: `${vocabProgress}%` }" />
+        </div>
+      </section>
+
       <div class="today-line">
         <span>今天 {{ session.reviewedToday }} 张复习 · {{ session.learnedToday }} 个新词 · {{ session.wroteToday }} 篇写作</span>
         <span v-if="newRemaining > 0" class="muted">还差 {{ newRemaining }} 个新词</span>
@@ -56,6 +71,7 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import StepStairs from '@/components/StepStairs.vue'
+import { CET6_TOTAL, VOCAB_LEVEL_LABELS } from '@/data/vocabulary'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -66,6 +82,14 @@ const session = useSessionStore()
 onMounted(() => {
   session.refresh()
 })
+
+const vocabProgress = computed(() =>
+  Math.min(100, Math.round((session.totalCards / CET6_TOTAL) * 100)),
+)
+const vocabDone = computed(() => Math.min(session.totalCards, CET6_TOTAL))
+const vocabLevelLabel = computed(
+  () => VOCAB_LEVEL_LABELS[settings.profile.vocabLevel],
+)
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -141,6 +165,23 @@ function continueStudy() {
   padding-top: 4px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.vocab-progress {
+  display: grid;
+  gap: 7px;
+  padding: 13px 15px;
+}
+
+.vocab-level {
+  color: var(--ink-2);
+  font-size: 11px;
+}
+
+.vocab-count {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .today-line {

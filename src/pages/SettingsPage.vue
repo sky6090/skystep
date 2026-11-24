@@ -33,7 +33,7 @@
 
       <section class="card section">
         <div class="section-head">
-          <h2 class="h3">学习方式</h2>
+          <h2 class="h3">复习方式</h2>
           <span class="muted small">随时切换</span>
         </div>
         <div class="theme-row">
@@ -49,7 +49,7 @@
           </button>
         </div>
         <p class="muted small">
-          学新词和复习共用这个方式。英→中练理解，中→英练回忆，拼写练输出；三种方式共用同一张 FSRS 卡。
+          学新词固定走三遍：英→中 → 中→英 → 拼写。这里只影响复习时先看哪一面。
         </p>
       </section>
 

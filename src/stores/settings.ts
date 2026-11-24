@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { db } from '@/db/db'
+import type { VocabLevel } from '@/data/placement'
 
 export type PetSpecies = 'cat' | 'dog' | 'dragon' | 'elf'
 export type ThemeMode = 'auto' | 'day' | 'night'
@@ -13,6 +14,8 @@ export interface Profile {
   dailyNewWords: number
   theme: ThemeMode
   learnMode: LearnMode
+  vocabLevel: VocabLevel
+  estimatedVocab: number
 }
 
 const DEFAULT_PROFILE: Profile = {
@@ -22,6 +25,8 @@ const DEFAULT_PROFILE: Profile = {
   dailyNewWords: 20,
   theme: 'auto',
   learnMode: 'en-to-zh',
+  vocabLevel: 'intermediate',
+  estimatedVocab: 0,
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -41,10 +46,23 @@ export const useSettingsStore = defineStore('settings', () => {
     await db.settings.put({ key: 'profile', value: { ...profile.value } })
   }
 
-  async function completeOnboarding(species: PetSpecies, name: string) {
+  async function completeOnboarding(
+    species: PetSpecies,
+    name: string,
+    level: VocabLevel = 'intermediate',
+    estimatedVocab = 0,
+  ) {
     profile.value.petSpecies = species
     profile.value.petName = name.trim() || '小步'
     profile.value.onboarded = true
+    profile.value.vocabLevel = level
+    profile.value.estimatedVocab = estimatedVocab
+    await save()
+  }
+
+  async function setVocabPlacement(level: VocabLevel, estimatedVocab: number) {
+    profile.value.vocabLevel = level
+    profile.value.estimatedVocab = estimatedVocab
     await save()
   }
 
@@ -72,5 +90,6 @@ export const useSettingsStore = defineStore('settings', () => {
     setDailyNewWords,
     setTheme,
     setLearnMode,
+    setVocabPlacement,
   }
 })
