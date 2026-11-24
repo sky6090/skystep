@@ -124,6 +124,12 @@ def build(source: Path, limit: int) -> list[dict]:
 
     rows.sort(key=lambda item: (item[0], len(item[1]["w"]), item[1]["w"]))
     selected = rows[:limit]
+    # Keep the frequency cutoff for general words, but never drop a CET-4/CET-6 word.
+    selected.extend(
+        row
+        for row in rows[limit:]
+        if row[1]["tag"] in {"CET-4", "CET-6"}
+    )
     entries = []
     for rank, (_, entry) in enumerate(selected, start=1):
         entry["rank"] = rank
