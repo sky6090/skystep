@@ -3,13 +3,13 @@
     <div class="page writing">
       <header class="page-head">
         <div>
-          <p class="eyebrow">write it out</p>
-          <h1 class="h1">写作</h1>
+          <p class="eyebrow">practice</p>
+          <h1 class="h1">练习</h1>
         </div>
         <span class="tag tag-accent">M3</span>
       </header>
 
-      <div class="mode-tabs" role="tablist" aria-label="写作模式">
+      <div class="mode-tabs" role="tablist" aria-label="练习模式">
         <button
           v-for="item in modes"
           :key="item.value"
