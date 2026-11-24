@@ -62,13 +62,13 @@
                 {{ item.row.favorite ? '★' : '☆' }}
               </button>
               <button
-                v-if="!item.row.wrong"
+                v-if="!item.row.learned && !item.row.wrong"
                 class="icon-btn small"
                 type="button"
-                :aria-label="item.row.learned ? '取消已学会' : '标记已学会'"
+                aria-label="标记已学会"
                 @click="toggleLearned(item.row)"
               >
-                {{ item.row.learned ? '✓' : '○' }}
+                ○
               </button>
             </div>
           </div>
