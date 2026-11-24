@@ -91,21 +91,21 @@
         <p class="lede">12 道四选一，不用查词，凭第一反应。之后会按结果调整新词难度。</p>
 
         <div class="placement-meta">
-          <span>{{ placementIndex + 1 }} / {{ placementQuestions.length }}</span>
-          <span>{{ Math.round((placementIndex / placementQuestions.length) * 100) }}%</span>
+          <span>{{ placementIndex + 1 }} / {{ questions.length }}</span>
+          <span>{{ Math.round((placementIndex / questions.length) * 100) }}%</span>
         </div>
         <div class="progress" aria-hidden="true">
           <span
-            :style="{ width: `${(placementIndex / placementQuestions.length) * 100}%` }"
+            :style="{ width: `${(placementIndex / questions.length) * 100}%` }"
           />
         </div>
 
         <div class="placement-question">
           <p class="eyebrow">这个词最接近哪个意思？</p>
-          <h2 class="placement-word">{{ placementQuestions[placementIndex].word }}</h2>
+          <h2 class="placement-word">{{ questions[placementIndex].word }}</h2>
           <div class="placement-options">
             <button
-              v-for="(option, index) in placementQuestions[placementIndex].options"
+              v-for="(option, index) in questions[placementIndex].options"
               :key="option"
               class="placement-option"
               type="button"
@@ -128,7 +128,7 @@
         <p class="eyebrow">your level</p>
         <h1 class="display">{{ placementResult.label }}</h1>
         <p class="lede">
-          答对 {{ placementResult.score }} / {{ placementQuestions.length }}，
+          答对 {{ placementResult.score }} / {{ questions.length }}，
           估算词汇量约 {{ placementResult.estimated }}。
         </p>
         <div class="placement-result">
@@ -153,8 +153,8 @@ import { useRoute, useRouter } from 'vue-router'
 import BrandMark from '@/components/BrandMark.vue'
 import PetAvatar from '@/components/PetAvatar.vue'
 import {
+  createPlacementQuestions,
   evaluatePlacement,
-  placementQuestions,
   type PlacementResult,
 } from '@/data/placement'
 import { useSettingsStore, type PetSpecies } from '@/stores/settings'
@@ -170,6 +170,7 @@ const userName = ref('')
 const name = ref('')
 const saving = ref(false)
 const placementIndex = ref(0)
+const questions = ref(createPlacementQuestions())
 const placementAnswers = ref<number[]>([])
 const placementResult = ref<PlacementResult | null>(null)
 
@@ -182,14 +183,18 @@ const speciesOptions: Array<{ id: PetSpecies; name: string; desc: string }> = [
 
 function answerPlacement(choice: number) {
   placementAnswers.value.push(choice)
-  if (placementIndex.value + 1 < placementQuestions.length) {
+  if (placementIndex.value + 1 < questions.value.length) {
     placementIndex.value += 1
   } else {
-    placementResult.value = evaluatePlacement(placementAnswers.value)
+    placementResult.value = evaluatePlacement(
+      placementAnswers.value,
+      questions.value,
+    )
   }
 }
 
 function restartPlacement() {
+  questions.value = createPlacementQuestions()
   placementIndex.value = 0
   placementAnswers.value = []
   placementResult.value = null

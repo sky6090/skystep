@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { evaluatePlacement, placementQuestions } from './placement'
+import {
+  createPlacementQuestions,
+  evaluatePlacement,
+  placementQuestions,
+} from './placement'
 
 describe('vocabulary placement', () => {
+  it('creates twelve fresh questions with four options each', () => {
+    const questions = createPlacementQuestions(12)
+    expect(questions).toHaveLength(12)
+    expect(new Set(questions.map((question) => question.word)).size).toBe(12)
+    for (const question of questions) {
+      expect(question.options).toHaveLength(4)
+      expect(question.options[question.answer]).toBeTruthy()
+    }
+  })
+
   it('estimates a basic level for few correct answers', () => {
     const result = evaluatePlacement(
       placementQuestions.map((question) => (question.answer + 1) % 4),
