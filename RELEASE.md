@@ -2,7 +2,7 @@
 
 SkyStep v1 发布前检查与 GitHub Pages 部署步骤。
 
-> 当前环境备注：系统 `git` / `gh` 未安装；已下载 portable MinGit 到 `.tools/git`，本地仓库已初始化并提交。GitHub 网页/HTTPS git 在当前网络不稳定，但 **SSH 443** 可用；已生成部署密钥 `.deploy/skystep_deploy`（私钥被 `.gitignore` 忽略）。没有 remote 和 GitHub 授权，所以尚未推送。
+> 部署状态：已推送到 `sky6090/skystep`，GitHub Actions 构建/部署成功；线上地址 https://sky6090.github.io/skystep/ 。远程使用 SSH 443 + `.deploy/skystep_deploy`（私钥被 `.gitignore` 忽略）。
 
 ## 1. 发布前检查
 
