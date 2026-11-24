@@ -184,6 +184,7 @@ const emptyText = computed(() => {
 
 onMounted(async () => {
   await wordbook.load()
+  await backfillLegacyLearned()
   try {
     dictionary.value = await loadDictionary()
     dictMap.value = dictionaryMap(dictionary.value)
@@ -191,6 +192,18 @@ onMounted(async () => {
     dictionary.value = []
   }
 })
+
+async function backfillLegacyLearned() {
+  const migration = await db.settings.get('learnedBackfillV1')
+  if (migration?.value) return
+  for (const card of await db.cards.toArray()) {
+    const row = wordbook.get(card.wordId)
+    if (row && !row.learned && !row.wrong) {
+      await wordbook.markLearned(card.wordId, row.source)
+    }
+  }
+  await db.settings.put({ key: 'learnedBackfillV1', value: true })
+}
 
 function wordFor(row: WordbookRow): WordEntry | null {
   const sample = wordById.get(row.wordId)
