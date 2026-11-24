@@ -460,6 +460,133 @@ p {
   }
 }
 
+@media (max-width: 719px) {
+  :root {
+    --nav-height: 66px;
+  }
+
+  .page {
+    padding: 16px 14px 30px;
+  }
+
+  .page-head {
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+
+  .home,
+  .learn,
+  .writing,
+  .practice,
+  .wordbook,
+  .dictionary,
+  .pet-page,
+  .settings {
+    gap: 10px !important;
+  }
+
+  .card {
+    padding: 14px !important;
+    border-radius: 12px;
+  }
+
+  .h1 {
+    font-size: 24px;
+  }
+
+  .display {
+    font-size: clamp(27px, 6.6vw, 31px);
+  }
+
+  .h2 {
+    font-size: 19px;
+  }
+
+  .h3 {
+    font-size: 16px;
+  }
+
+  .stack {
+    gap: 9px;
+  }
+
+  .stack-lg {
+    gap: 14px;
+  }
+
+  .paper-panel {
+    padding: 16px;
+  }
+
+  .topbar {
+    padding: 10px 14px 8px !important;
+  }
+
+  .bottom-nav {
+    padding: 5px 4px calc(5px + env(safe-area-inset-bottom));
+  }
+
+  .nav-item {
+    gap: 2px;
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .nav-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .onboarding {
+    padding: 20px 16px 24px !important;
+  }
+
+  .brand-row {
+    margin-bottom: 24px !important;
+  }
+
+  .stage {
+    gap: 12px !important;
+  }
+
+  .room {
+    min-height: 290px !important;
+    gap: 6px !important;
+    padding: 14px !important;
+  }
+
+  .window {
+    width: 78px !important;
+    height: 60px !important;
+    top: 14px !important;
+    left: 14px !important;
+  }
+
+  .pet-spot {
+    top: 10px !important;
+    right: 14px !important;
+  }
+
+  .stairs {
+    margin-top: 62px !important;
+    gap: 6px !important;
+  }
+
+  .step {
+    min-height: 54px !important;
+    padding: 8px 10px !important;
+  }
+
+  .home-actions .home-action {
+    min-height: 46px !important;
+    font-size: 15px !important;
+  }
+
+  .quick-card {
+    padding: 12px 14px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
