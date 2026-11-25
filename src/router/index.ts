@@ -19,7 +19,7 @@ const router = createRouter({
       path: '/review',
       name: 'review',
       meta: { backTo: '/' },
-      component: () => import('@/pages/ReviewPage.vue'),
+      component: () => import('@/pages/LearnPage.vue'),
     },
     {
       path: '/practice',

@@ -47,7 +47,8 @@ function isActive(to: string) {
       route.path === '/' ||
       route.path === '/practice' ||
       route.path === '/exam' ||
-      route.path === '/writing-exam'
+      route.path === '/writing-exam' ||
+      route.path === '/review'
     )
   }
   return route.path.startsWith(to)

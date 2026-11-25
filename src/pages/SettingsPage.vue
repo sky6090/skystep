@@ -50,28 +50,6 @@
 
       <section class="card section">
         <div class="section-head">
-          <h2 class="h3">复习方式</h2>
-          <span class="muted small">随时切换</span>
-        </div>
-        <div class="theme-row">
-          <button
-            v-for="option in learnModes"
-            :key="option.value"
-            class="theme-btn"
-            :class="{ active: settings.profile.learnMode === option.value }"
-            type="button"
-            @click="settings.setLearnMode(option.value)"
-          >
-            {{ option.label }}
-          </button>
-        </div>
-        <p class="muted small">
-          学新词固定走三遍：英→中 → 中→英 → 拼写。这里只影响复习时先看哪一面。
-        </p>
-      </section>
-
-      <section class="card section">
-        <div class="section-head">
           <h2 class="h3">主题</h2>
           <span class="muted small">跟着时间走</span>
         </div>
@@ -194,7 +172,7 @@ import { AIError } from '@/domain/ai'
 import { VOCAB_LEVEL_LABELS } from '@/data/vocabulary'
 import { collectBackup, downloadBackup, restoreBackup } from '@/services/backup'
 import { useAIStore } from '@/stores/ai'
-import { useSettingsStore, type LearnMode, type ThemeMode } from '@/stores/settings'
+import { useSettingsStore, type ThemeMode } from '@/stores/settings'
 
 const settings = useSettingsStore()
 const ai = useAIStore()
@@ -235,12 +213,6 @@ const themes: Array<{ value: ThemeMode; label: string }> = [
   { value: 'auto', label: '自动' },
   { value: 'day', label: '白天' },
   { value: 'night', label: '夜晚' },
-]
-
-const learnModes: Array<{ value: LearnMode; label: string }> = [
-  { value: 'en-to-zh', label: '英 → 中' },
-  { value: 'zh-to-en', label: '中 → 英' },
-  { value: 'spelling', label: '拼写' },
 ]
 
 async function saveUserName() {

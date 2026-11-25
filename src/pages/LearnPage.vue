@@ -3,8 +3,8 @@
     <div class="page learn">
       <header class="page-head">
         <div>
-          <p class="eyebrow">today's new words</p>
-          <h1 class="h1">学新词</h1>
+          <p class="eyebrow">{{ reviewMode ? 'due today' : "today's new words" }}</p>
+          <h1 class="h1">{{ reviewMode ? '复习' : '学新词' }}</h1>
         </div>
         <span class="count">{{ phaseIndex + 1 }} / 3 遍</span>
       </header>
@@ -26,20 +26,28 @@
 
       <section v-if="finished" class="done card">
         <p class="eyebrow">done</p>
-        <h2 class="h2">今天的三遍学完了。</h2>
+        <h2 class="h2">
+          {{ reviewMode ? '今天的到期卡清完了。' : '今天的三遍学完了。' }}
+        </h2>
         <p class="muted small">
-          英译中、中译英、拼写各过了一遍；学过的词已经进入 FSRS 复习。
+          {{
+            reviewMode
+              ? '英译中、中译英、拼写各过了一遍；到期词会按 FSRS 重新排期。'
+              : '英译中、中译英、拼写各过了一遍；学过的词已经进入 FSRS 复习。'
+          }}
         </p>
         <div class="done-actions">
-          <RouterLink to="/review" class="btn btn-primary">去复习</RouterLink>
+          <RouterLink :to="reviewMode ? '/learn' : '/review'" class="btn btn-primary">
+            {{ reviewMode ? '去学新词' : '去复习' }}
+          </RouterLink>
           <RouterLink to="/" class="btn btn-ghost">回首页</RouterLink>
         </div>
       </section>
 
       <template v-else-if="current">
-        <article class="word-sheet card">
+        <article class="word-sheet card" :class="feedbackFx">
           <div class="word-meta">
-            <span class="tag tag-accent">{{ current.tags[0] }}</span>
+            <span class="tag tag-accent">{{ reviewMode ? '复习' : current.tags[0] }}</span>
             <span class="tag">{{ current.pos }}</span>
             <button
               class="icon-btn"
@@ -156,7 +164,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import { db } from '@/db/db'
 import {
@@ -180,6 +189,18 @@ interface DailyNewQueue {
   ids: string[]
 }
 
+interface LearnSession {
+  day: string
+  mode: 'learn' | 'review'
+  level: string
+  phase: number
+  wordIndex: number
+  queueIds: string[]
+  activeIds: string[]
+  wrongIds: string[]
+  retry: boolean
+}
+
 function shuffled<T>(items: T[]): T[] {
   const list = [...items]
   for (let index = list.length - 1; index > 0; index -= 1) {
@@ -192,6 +213,9 @@ function shuffled<T>(items: T[]): T[] {
 const settings = useSettingsStore()
 const session = useSessionStore()
 const wordbook = useWordbookStore()
+const route = useRoute()
+const reviewMode = computed(() => route.path === '/review')
+const sessionKey = computed(() => (reviewMode.value ? 'reviewSession' : 'learnSession'))
 
 const queue = ref<WordEntry[]>([])
 const activeQueue = ref<WordEntry[]>([])
@@ -206,9 +230,12 @@ const selected = ref('')
 const spellingInput = ref('')
 const feedback = ref('')
 const feedbackTone = ref('')
+const feedbackFx = ref('')
 const rated = new Set<string>()
 const phaseWrong = new Set<string>()
 let advanceTimer: number | undefined
+let fxTimer: number | undefined
+let audioContext: AudioContext | undefined
 
 const current = computed(() => activeQueue.value[wordIndex.value])
 const quiz = computed(() => {
@@ -231,7 +258,19 @@ onMounted(async () => {
   await load()
 })
 
-onBeforeUnmount(clearAdvanceTimer)
+watch(
+  () => route.path,
+  (path) => {
+    if (path === '/learn' || path === '/review') void load()
+  },
+)
+
+onBeforeUnmount(() => {
+  clearAdvanceTimer()
+  if (fxTimer) window.clearTimeout(fxTimer)
+  void saveSession()
+  if (audioContext) void audioContext.close()
+})
 
 function clearAdvanceTimer() {
   if (advanceTimer !== undefined) {
@@ -250,18 +289,76 @@ function scheduleAdvance() {
 
 async function load() {
   await session.refresh()
-  const existing = new Set((await db.cards.toArray()).map((row) => row.wordId))
-  const limit = Math.max(0, settings.profile.dailyNewWords - session.learnedToday)
+  const level = settings.profile.vocabLevel
+  const entries = await loadDictionary()
+  const dictMap = dictionaryMap(entries)
+  const sampleMap = new Map(sampleWords.map((word) => [word.id, word]))
+  const resolveWord = (id: string): WordEntry | undefined => {
+    const entry = dictMap.get(id)
+    if (entry) return entryToWord(entry)
+    return sampleMap.get(id)
+  }
 
+  const cards = await db.cards.toArray()
+  const existing = new Set(cards.map((row) => row.wordId))
+
+  const storedRow = await db.settings.get(sessionKey.value)
+  const stored = storedRow?.value as Partial<LearnSession> | undefined
+  if (
+    stored?.day === studyDayKey() &&
+    stored.mode === (reviewMode.value ? 'review' : 'learn') &&
+    stored.level === level &&
+    typeof stored.phase === 'number' &&
+    stored.phase >= 0 &&
+    stored.phase < 3 &&
+    Array.isArray(stored.queueIds)
+  ) {
+    const restoredQueue = stored.queueIds
+      .map(resolveWord)
+      .filter((word): word is WordEntry => Boolean(word))
+    const restoredActive = (stored.activeIds ?? [])
+      .map(resolveWord)
+      .filter((word): word is WordEntry => Boolean(word))
+    if (restoredQueue.length > 0) {
+      queue.value = restoredQueue
+      activeQueue.value = restoredActive.length ? restoredActive : restoredQueue
+      phaseIndex.value = Math.min(2, stored.phase)
+      wordIndex.value = Math.min(
+        Math.max(0, stored.wordIndex ?? 0),
+        activeQueue.value.length - 1,
+      )
+      phaseWrong.clear()
+      for (const id of stored.wrongIds ?? []) phaseWrong.add(id)
+      isRetry.value = Boolean(stored.retry)
+      rated.clear()
+      if (!reviewMode.value) {
+        for (const word of restoredQueue) {
+          if (existing.has(word.id)) rated.add(word.id)
+        }
+      }
+      finished.value = false
+      resetStep()
+      return
+    }
+  }
+
+  if (reviewMode.value) {
+    const due = await db.cards.where('dueAt').belowOrEqual(Date.now()).toArray()
+    due.sort((a, b) => a.dueAt - b.dueAt)
+    queue.value = due
+      .map((card) => resolveWord(card.wordId))
+      .filter((word): word is WordEntry => Boolean(word))
+    finishQueue()
+    return
+  }
+
+  const limit = Math.max(0, settings.profile.dailyNewWords - session.learnedToday)
   if (limit === 0) {
     queue.value = []
     finishQueue()
     return
   }
 
-  const level = settings.profile.vocabLevel
-  const entries = await loadDictionary()
-  const dictMap = dictionaryMap(entries)
   const pool = entries
     .filter((entry) => {
       if (level === 'basic') return entry.tag === 'CET-4' || entry.tag === '高频'
@@ -270,13 +367,13 @@ async function load() {
     })
     .filter((entry) => !existing.has(entry.id))
 
-  const storedRow = await db.settings.get('dailyNewQueue')
-  const stored = storedRow?.value as Partial<DailyNewQueue> | undefined
+  const storedQueueRow = await db.settings.get('dailyNewQueue')
+  const storedQueue = storedQueueRow?.value as Partial<DailyNewQueue> | undefined
   const storedIds =
-    stored?.day === studyDayKey() &&
-    stored.level === level &&
-    Array.isArray(stored.ids)
-      ? stored.ids.filter(
+    storedQueue?.day === studyDayKey() &&
+    storedQueue.level === level &&
+    Array.isArray(storedQueue.ids)
+      ? storedQueue.ids.filter(
           (id): id is string =>
             typeof id === 'string' &&
             !existing.has(id) &&
@@ -306,11 +403,10 @@ async function load() {
 
   queue.value = selectedIds
     .slice(0, limit)
-    .map((id) => dictMap.get(id))
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-    .map(entryToWord)
-
+    .map((id) => resolveWord(id))
+    .filter((word): word is WordEntry => Boolean(word))
   finishQueue()
+  await saveSession()
 }
 
 function finishQueue() {
@@ -322,16 +418,76 @@ function finishQueue() {
   rated.clear()
   finished.value = queue.value.length === 0
   resetStep()
+  void saveSession()
+}
+
+async function saveSession() {
+  if (finished.value || phaseIndex.value >= 3 || queue.value.length === 0) {
+    await db.settings.delete(sessionKey.value)
+    return
+  }
+  const payload: LearnSession = {
+    day: studyDayKey(),
+    mode: reviewMode.value ? 'review' : 'learn',
+    level: settings.profile.vocabLevel,
+    phase: phaseIndex.value,
+    wordIndex: wordIndex.value,
+    queueIds: queue.value.map((word) => word.id),
+    activeIds: activeQueue.value.map((word) => word.id),
+    wrongIds: [...phaseWrong],
+    retry: isRetry.value,
+  }
+  await db.settings.put({ key: sessionKey.value, value: payload })
 }
 
 function resetStep() {
   clearAdvanceTimer()
+  if (fxTimer) {
+    window.clearTimeout(fxTimer)
+    fxTimer = undefined
+  }
+  feedbackFx.value = ''
   answered.value = false
   lastCorrect.value = false
   selected.value = ''
   spellingInput.value = ''
   feedback.value = ''
   feedbackTone.value = ''
+}
+
+function triggerFeedback(correct: boolean) {
+  feedbackFx.value = correct ? 'fx-correct' : 'fx-wrong'
+  if (fxTimer) window.clearTimeout(fxTimer)
+  fxTimer = window.setTimeout(() => {
+    feedbackFx.value = ''
+  }, 420)
+  playTone(correct)
+}
+
+function playTone(correct: boolean) {
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext
+    if (!Ctor) return
+    audioContext ??= new Ctor()
+    void audioContext.resume()
+    const oscillator = audioContext.createOscillator()
+    const gain = audioContext.createGain()
+    const now = audioContext.currentTime
+    oscillator.type = 'sine'
+    oscillator.frequency.setValueAtTime(correct ? 880 : 220, now)
+    gain.gain.setValueAtTime(0.0001, now)
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18)
+    oscillator.connect(gain)
+    gain.connect(audioContext.destination)
+    oscillator.start(now)
+    oscillator.stop(now + 0.2)
+  } catch {
+    // Sound is a bonus; never block answering.
+  }
 }
 
 function optionClass(option: string) {
@@ -349,32 +505,57 @@ async function rateWord(known: boolean) {
   const now = Date.now()
   const rating = known ? Rating.Good : Rating.Again
   try {
-    const card = await createNewCard(new Date(now))
-    const result = await applyRating(card, rating, new Date(now))
-    const dueAt = known ? result.card.dueAt.getTime() : now
+    if (reviewMode.value) {
+      const row = await db.cards.get(word.id)
+      if (!row) return
+      const result = await applyRating(row.card, rating, new Date(now))
+      const dueAt = known ? result.card.dueAt.getTime() : now + 60_000
+      await db.cards.update(word.id, {
+        dueAt,
+        state: result.card.state,
+        card: result.card,
+        updatedAt: now,
+        sameDay: !known,
+      })
+      await db.reviewLogs.add({
+        wordId: word.id,
+        rating,
+        kind: 'review',
+        reviewedAt: now,
+        dueAt,
+        state: result.card.state,
+        stability: result.card.stability,
+        difficulty: result.card.difficulty,
+        scheduledDays: result.card.scheduledDays,
+      })
+    } else {
+      const card = await createNewCard(new Date(now))
+      const result = await applyRating(card, rating, new Date(now))
+      const dueAt = known ? result.card.dueAt.getTime() : now
 
-    await db.cards.put({
-      wordId: word.id,
-      dueAt,
-      state: result.card.state,
-      card: result.card,
-      createdAt: now,
-      updatedAt: now,
-      sameDay: !known,
-      origin: 'learn',
-    })
+      await db.cards.put({
+        wordId: word.id,
+        dueAt,
+        state: result.card.state,
+        card: result.card,
+        createdAt: now,
+        updatedAt: now,
+        sameDay: !known,
+        origin: 'learn',
+      })
 
-    await db.reviewLogs.add({
-      wordId: word.id,
-      rating,
-      kind: 'new',
-      reviewedAt: now,
-      dueAt,
-      state: result.card.state,
-      stability: result.card.stability,
-      difficulty: result.card.difficulty,
-      scheduledDays: result.card.scheduledDays,
-    })
+      await db.reviewLogs.add({
+        wordId: word.id,
+        rating,
+        kind: 'new',
+        reviewedAt: now,
+        dueAt,
+        state: result.card.state,
+        stability: result.card.stability,
+        difficulty: result.card.difficulty,
+        scheduledDays: result.card.scheduledDays,
+      })
+    }
 
     await wordbook.ensure(word.id, 'manual')
     if (known) await wordbook.markLearned(word.id, 'manual')
@@ -397,6 +578,7 @@ async function pickOption(option: string) {
   else phaseWrong.add(current.value.id)
   feedback.value = correct ? '正确。' : `正确答案：${quiz.value.answer}`
   feedbackTone.value = correct ? 'ok' : 'wrong'
+  triggerFeedback(correct)
   try {
     if (phaseIndex.value === 0) {
       await rateWord(correct)
@@ -419,6 +601,7 @@ async function checkSpelling() {
   else phaseWrong.add(current.value.id)
   feedback.value = correct ? '拼写正确。' : `正确拼写：${current.value.word}`
   feedbackTone.value = correct ? 'ok' : 'wrong'
+  triggerFeedback(correct)
   if (!correct) await wordbook.markWrong(current.value.id, 'manual')
   if (correct) scheduleAdvance()
 }
@@ -450,6 +633,7 @@ function advance() {
   if (wordIndex.value + 1 < activeQueue.value.length) {
     wordIndex.value += 1
     resetStep()
+    void saveSession()
     return
   }
 
@@ -459,6 +643,7 @@ function advance() {
     wordIndex.value = 0
     isRetry.value = true
     resetStep()
+    void saveSession()
     return
   }
 
@@ -469,9 +654,11 @@ function advance() {
     wordIndex.value = 0
     isRetry.value = false
     resetStep()
+    void saveSession()
     return
   }
   finished.value = true
+  void saveSession()
 }
 
 async function toggleFavorite() {
@@ -537,6 +724,45 @@ async function toggleFavorite() {
   display: grid;
   gap: 10px;
   margin-top: 2px;
+}
+
+.word-sheet.fx-correct {
+  animation: card-correct 420ms var(--ease);
+}
+
+.word-sheet.fx-wrong {
+  animation: card-wrong 360ms var(--ease);
+}
+
+@keyframes card-correct {
+  0% {
+    border-color: var(--line);
+    transform: scale(1);
+  }
+  35% {
+    border-color: var(--success);
+    transform: scale(1.012);
+  }
+  100% {
+    border-color: var(--line);
+    transform: scale(1);
+  }
+}
+
+@keyframes card-wrong {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  55% {
+    transform: translateX(4px);
+  }
+  80% {
+    transform: translateX(-2px);
+  }
 }
 
 .word-meta {
