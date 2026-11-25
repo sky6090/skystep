@@ -8,7 +8,8 @@
     - word / phonetic / translation / part of speech / frequency rank / tag / inflected forms
     - 5,406 CET-6, 396 CET-4, 334 考研, 12,045 高频
     - CET-4 + CET-6 union: 5,802
-  - **Examples, phrases and synonyms are currently empty** for ECDICT entries. They are placeholders for a later Tatoeba / WordNet pass.
+  - **Examples, phrases and synonyms are currently empty** for ECDICT entries. The core 28 sample words have curated examples.
+  - `public/data/definitions.json` — 6,151 English definitions for CET/考研 words, generated from ECDICT by `scripts/build-definitions.py`; used as the daily-practice fallback when a word has no example sentence.
   - ECDICT attribution must stay in the app's About page and repository.
 - `data/cet6.jsonl` — legacy KyleBing development source, not committed and no longer used to generate the production dictionary.
 - `scripts/build-dictionary.py` — legacy KyleBing parser, kept for reference only.

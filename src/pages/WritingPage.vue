@@ -232,6 +232,7 @@ import {
   entryToWord,
   loadDictionary,
 } from '@/data/dictionary'
+import { loadDefinitions } from '@/data/definitions'
 import { wordById, type WordEntry } from '@/data/words.sample'
 import { buildDailyArticle } from '@/domain/dailyArticle'
 import { AIError, correctWithAI } from '@/domain/ai'
@@ -303,7 +304,9 @@ onMounted(async () => {
       return true
     })
 
-  const daily = base.length > 0 ? buildDailyArticle(base, studyDayKey()) : null
+  const daily = base.length > 0
+    ? buildDailyArticle(base, studyDayKey(), await loadDefinitions())
+    : null
   dailyArticle.value = daily
 
   const targets = new Set(rows.filter((row) => row.favorite || row.wrong).map((row) => row.wordId))

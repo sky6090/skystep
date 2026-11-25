@@ -2,7 +2,18 @@ import type { WritingArticle } from '@/data/articles.sample'
 import { sampleArticles } from '@/data/articles.sample'
 import type { WordEntry } from '@/data/words.sample'
 
-function pickSentence(word: WordEntry, offset: number) {
+function cleanDefinition(definition: string) {
+  return definition
+    .replace(/\b(?:n|v|a|adj|adv|vt|vi|prep|pron|conj)\.\s*/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function pickSentence(
+  word: WordEntry,
+  offset: number,
+  definitions?: Map<string, string>,
+) {
   const candidates = sampleArticles.flatMap((article) =>
     article.sentences.filter((sentence) => sentence.targets.includes(word.id)),
   )
@@ -16,9 +27,20 @@ function pickSentence(word: WordEntry, offset: number) {
       targets: [word.id],
     }
   }
+  const definition = definitions?.get(word.id)
+  if (definition) {
+    const cleaned = cleanDefinition(definition)
+    if (cleaned) {
+      return {
+        en: `The word "${word.word}" can mean: ${cleaned}.`,
+        zh: `“${word.word}”可以表示${word.meaning}。`,
+        targets: [word.id],
+      }
+    }
+  }
   return {
-    en: `The word ${word.word} means ${word.meaning}. I met it again today, and it made me pause.`,
-    zh: `“${word.word}”的意思是${word.meaning}。今天我又遇到了它，它让我停了一下。`,
+    en: `The word "${word.word}" came up in today's reading, and the surrounding sentence gives it meaning.`,
+    zh: `今天的阅读里出现了“${word.word}”这个词，它的意思要结合上下文来看。`,
     targets: [word.id],
   }
 }
@@ -31,6 +53,7 @@ function withWordHint(text: string, word: string, chinese: boolean) {
 export function buildDailyArticle(
   words: WordEntry[],
   dateKey: string,
+  definitions?: Map<string, string>,
 ): WritingArticle | null {
   const unique = words.filter(
     (word, index, all) =>
@@ -39,7 +62,7 @@ export function buildDailyArticle(
   if (unique.length < 1) return null
 
   const sentences = unique.map((word, index) => {
-    const sentence = pickSentence(word, index + dateKey.length)
+    const sentence = pickSentence(word, index + dateKey.length, definitions)
     return {
       en: withWordHint(sentence.en || word.example, word.word, false),
       zh: withWordHint(sentence.zh || word.exampleZh, word.word, true),

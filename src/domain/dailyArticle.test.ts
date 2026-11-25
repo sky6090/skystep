@@ -43,9 +43,12 @@ describe('daily wrong-word article', () => {
         },
       ],
       '2026-11-24',
+      new Map([['abandon', 'v. give up completely']]),
     )
     expect(article?.targetWords).toEqual(['abandon'])
     if (!article) return
+    expect(article.sentences[0].en).toContain('can mean: give up completely')
+    expect(article.sentences[0].en).not.toContain('放弃')
     const result = evaluateWriting({
       article,
       mode: 'en-to-zh',
