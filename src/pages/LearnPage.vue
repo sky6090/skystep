@@ -353,6 +353,37 @@ async function load() {
   }
 
   const limit = Math.max(0, settings.profile.dailyNewWords - session.learnedToday)
+  const completedToday =
+    (await db.settings.get('learnCompletedDay'))?.value === studyDayKey()
+
+  // Existing users from before phase-progress persistence: recover the phase-1 queue
+  // instead of showing "all done" right after the first pass.
+  if (limit === 0 && !completedToday) {
+    const queueRow = await db.settings.get('dailyNewQueue')
+    const oldQueue = queueRow?.value as Partial<DailyNewQueue> | undefined
+    if (oldQueue?.day === studyDayKey() && Array.isArray(oldQueue.ids)) {
+      const recovered = oldQueue.ids
+        .map(resolveWord)
+        .filter((word): word is WordEntry => Boolean(word))
+      if (recovered.length > 0) {
+        queue.value = recovered
+        activeQueue.value = recovered
+        phaseIndex.value = 1
+        wordIndex.value = 0
+        phaseWrong.clear()
+        isRetry.value = false
+        rated.clear()
+        for (const word of recovered) {
+          if (existing.has(word.id)) rated.add(word.id)
+        }
+        finished.value = false
+        resetStep()
+        await saveSession()
+        return
+      }
+    }
+  }
+
   if (limit === 0) {
     queue.value = []
     finishQueue()
@@ -423,6 +454,9 @@ function finishQueue() {
 
 async function saveSession() {
   if (finished.value || phaseIndex.value >= 3 || queue.value.length === 0) {
+    if (finished.value && !reviewMode.value) {
+      await db.settings.put({ key: 'learnCompletedDay', value: studyDayKey() })
+    }
     await db.settings.delete(sessionKey.value)
     return
   }
