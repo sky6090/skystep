@@ -1,5 +1,14 @@
 <template>
-  <div v-if="!ready" class="boot">
+  <div v-if="bootError" class="boot boot-error">
+    <BrandMark :size="64" />
+    <p class="boot-name">页面没能打开</p>
+    <p class="boot-message">{{ bootError }}</p>
+    <button class="btn btn-primary" type="button" @click="initialize">重试</button>
+    <p class="boot-hint">
+      如果是在微信、小红书等 App 内打开，请点右上角，选择在系统浏览器中打开。
+    </p>
+  </div>
+  <div v-else-if="!ready" class="boot">
     <BrandMark :size="64" />
     <p class="boot-name">SkyStep</p>
     <p class="boot-tagline">sky above, step below</p>
@@ -20,8 +29,10 @@ const settings = useSettingsStore()
 const session = useSessionStore()
 const pet = usePetStore()
 const ready = ref(false)
+const bootError = ref('')
 let themeTimer: number | undefined
 let settlementTimer: number | undefined
+let bootWatchdog: number | undefined
 
 function msUntilFourAm() {
   const now = new Date()
@@ -59,20 +70,45 @@ function applyTheme() {
     ?.setAttribute('content', theme === 'night' ? '#D5E7F4' : '#F2F8FC')
 }
 
-onMounted(async () => {
-  await settings.load()
-  applyTheme()
-  await session.refresh()
-  await pet.load()
-  await pet.settleDue()
-  if (!settings.profile.onboarded && router.currentRoute.value.path !== '/onboarding') {
-    await router.replace('/onboarding')
+async function initialize() {
+  bootError.value = ''
+  ready.value = false
+  if (bootWatchdog) window.clearTimeout(bootWatchdog)
+  bootWatchdog = window.setTimeout(() => {
+    if (!ready.value && !bootError.value) {
+      bootError.value = '本地数据加载超时。请刷新页面，或换到系统浏览器再试。'
+    }
+  }, 8000)
+
+  try {
+    await settings.load()
+    bootError.value = ''
+    applyTheme()
+    ready.value = true
+    if (bootWatchdog) window.clearTimeout(bootWatchdog)
+    if (!settings.profile.onboarded && router.currentRoute.value.path !== '/onboarding') {
+      await router.replace('/onboarding')
+    }
+    scheduleSettlement()
+    document.addEventListener('visibilitychange', onVisible)
+    themeTimer = window.setInterval(applyTheme, 60_000)
+
+    // These are not required to render the app; keep startup fast and resilient.
+    void session.refresh()
+    void pet
+      .load()
+      .then(() => pet.settleDue())
+      .catch(() => undefined)
+  } catch (error) {
+    if (bootWatchdog) window.clearTimeout(bootWatchdog)
+    bootError.value =
+      error instanceof Error
+        ? `本地存储没有打开：${error.message}`
+        : '浏览器没有允许本地存储，学习数据打不开。'
   }
-  ready.value = true
-  scheduleSettlement()
-  document.addEventListener('visibilitychange', onVisible)
-  themeTimer = window.setInterval(applyTheme, 60_000)
-})
+}
+
+onMounted(initialize)
 
 watch(
   () => settings.profile.theme,
@@ -82,6 +118,7 @@ watch(
 onBeforeUnmount(() => {
   if (themeTimer) window.clearInterval(themeTimer)
   if (settlementTimer) window.clearTimeout(settlementTimer)
+  if (bootWatchdog) window.clearTimeout(bootWatchdog)
   document.removeEventListener('visibilitychange', onVisible)
 })
 </script>
@@ -109,5 +146,25 @@ onBeforeUnmount(() => {
   font-family: var(--font-serif);
   font-size: 16px;
   font-style: italic;
+}
+
+.boot-error {
+  padding: 24px;
+}
+
+.boot-message {
+  max-width: 30ch;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.boot-hint {
+  max-width: 34ch;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
 }
 </style>
